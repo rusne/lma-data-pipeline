@@ -5,3 +5,5 @@
 5. What should we do with missing data, e.g. actors without addresses or names? Skip or fill?
 - Decided on 17 Sep that we would skip and log how many entries have been skipped for which reason - then decide based on statistics
 6. How do we integrate EVOA data?
+7. How do we make sure that LMA data always comes in the same structure (e.g. same column names, same sheet names, etc.) (as it doesn't...) ?
+8. What can we do with afgiftemeldingen?
