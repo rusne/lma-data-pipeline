@@ -2,7 +2,12 @@
 
 import pandas as pd
 
+import filter.run
 import clean.run
+import enhance.run
+import classify.run
+import analyze.run
+import save.run
 
 
 import warnings  # ignore unnecessary warnings
@@ -24,6 +29,13 @@ if __name__ == '__main__':
     cleaned_df = clean.run(filtered_df)
 
     # enhance
+    enhanced_df = enhance.run(cleaned_df)
+
     # classify
-    # save
+    classified_df = classify.run(enhanced_df)
+
     # analyze (emission)
+    analyzed_df = analyze.run(classified_df)
+
+    # save
+    saved_df = save.run(analyzed_df)
