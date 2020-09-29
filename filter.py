@@ -48,13 +48,44 @@ def run(dataframe):
     print('Original dataset length:', len(LMA.index), 'lines,',)
 
     # --1-- filter empty fields
+    print('skipping empty fields:')
 
-    # log all empty fields before removing them
-    print(len(LMA.index) - LMA['MeldPeriodeJAAR'].count(),)
-    print('lines do not have a year specified and will be removed')
+    non_empty_fields = ['Afvalstroomnummer', 'VerwerkingsmethodeCode',
+                        'EuralCode', 'MeldPeriodeJAAR', 'MeldPeriodeMAAND',
+                        'Gewicht_KG', 'Aantal_vrachten',
+                        # Ontdoener
+                        'Ontdoener', 'Ontdoener_Postcode',
+                        # Herkomst
+                        'Herkomst_Postcode',
+                        # # Afzender
+                        # 'Afzender', 'Afzender_Postcode',
+                        # # Inzamelaar
+                        # 'Inzamelaar', 'Inzamelaar_Postcode',
+                        # # Bemiddelaar
+                        # 'Bemiddelaar', 'Bemiddelaar_Postcode',
+                        # # Handelaar
+                        # 'Handelaar', 'Handelaar_Postcode',
+                        # # Ontvanger
+                        # 'Ontvanger', 'Ontvanger_Postcode',
+                        # Verwerker
+                        'Verwerker', 'Verwerker_Postcode']
+
+    for field in non_empty_fields:
+
+        # log all empty fields before removing them
+        e = len(LMA.index) - LMA[field].count()
+        if e > 0:
+            print('lines do not have a year specified and will be removed')
 
     print(len(LMA.index) - LMA['MeldPeriodeMAAND'].count(),)
     print('lines do not have a month specified and will be removed')
+
+    # Remove those data entries that have empty fields
+    LMA = LMA[LMA.MeldPeriodeJAAR.notnull()]
+    LMA = LMA[LMA.MeldPeriodeMAAND.notnull()]
+
+
+    # --2-- filter invalid fields
 
     print(len(LMA.index) - LMA[LMA['Gewicht_KG'] < 1].count(),)
     print('lines have specified 0 weight and will be removed')
@@ -63,15 +94,18 @@ def run(dataframe):
     print('lines have specified 0 trips and will be removed')
 
     for role in roles:
-        
-        print(len(LMA.index) - LMA[len(LMA[role + '_Postcode']) < 6].count(),)
-        print('lines have specified 0 trips and will be removed')
 
-    # Remove those data entries that have empty fields
-    LMA = LMA[LMA.MeldPeriodeJAAR.notnull()]
-    LMA = LMA[LMA.MeldPeriodeMAAND.notnull()]
+        print(len(LMA.index) - LMA[len(LMA[role + '_Postcode']) < 6].count(),)
+        print('lines have invalid {0} postcode and will be removed'.format(role))
+
+
     LMA = LMA[LMA[LMA['Gewicht_KG'] >= 1]
     LMA = LMA[LMA[LMA['Aantal_vrachten'] >= 1]
+
+    for role in roles:
+
+        print(len(LMA.index) - LMA[len(LMA[role + '_Postcode']) < 6].count(),)
+        print('lines have invalid {0} postcode and will be removed'.format(role))
 
 
 
