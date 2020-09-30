@@ -31,7 +31,7 @@ def get_addresses(dataset):
 
     # concatenate to full address
     addresses['Address'] = addresses[cols[0]].str.cat(addresses[cols[1:]], sep=', ')
-    # addresses = addresses.loc[:5]
+    addresses = addresses.loc[:5]
 
     return addresses
 
@@ -53,6 +53,7 @@ def geocode(addresses):
         func = lambda loc: getattr(loc, coord) if loc else None
         addresses[coord.capitalize()] = addresses['Location'].apply(func)
 
+    # SUGGESTION: merge common locations!!!
     geometry = gpd.points_from_xy(addresses.Longitude, addresses.Latitude)
     locations = gpd.GeoDataFrame(addresses['Ontdoener_Postcode'], geometry=geometry)
     locations.set_crs(epsg=4326, inplace=True)  # specify CRS
@@ -73,7 +74,7 @@ if __name__ == "__main__":
 
     # import postcode districts
     districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
-    districts['Centroids'] = districts.geometry.centroid
+    districts['Centroid'] = districts.geometry.centroid
 
     print('Point in polygon...')
     # point in polygon (with spatial indexes)
@@ -81,6 +82,8 @@ if __name__ == "__main__":
 
     # check if location & district code match
     # false: no/wrong point from geocoding
+    print(merging['geometry'])
     condition = merging['Ontdoener_Postcode'].str.contains("|".join(merging['PC4'].astype(str)))
-    print(condition)
+    merging.loc[condition, 'geometry'] = merging['Centroid']
+    print(merging['geometry'])
 
