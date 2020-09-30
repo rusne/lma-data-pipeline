@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Check for unrealistic amounts
+#   -> kick out wrong data (save separately?) and keep track of how much has been kicked out
+# filter too small or too big amounts
+# Fill empty fields / remove entries
 
 """
 This module filters useful columns and data points in the original data file

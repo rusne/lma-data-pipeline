@@ -29,10 +29,13 @@ if __name__ == '__main__':
     cleaned_df = clean.run(filtered_df)
 
     # enhance
-    enhanced_df = enhance.run(cleaned_df)
+    geolocated_df = enhance.run(cleaned_df)
+
+    # enhance
+    connected_df = enhance.run(geolocated_df)
 
     # classify
-    classified_df = classify.run(enhanced_df)
+    classified_df = classify.run(connected_df)
 
     # analyze (emission)
     analyzed_df = analyze.run(classified_df)
