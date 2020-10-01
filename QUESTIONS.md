@@ -7,3 +7,4 @@
 6. How do we integrate EVOA data?
 7. How do we make sure that LMA data always comes in the same structure (e.g. same column names, same sheet names, etc.) (as it doesn't...) ?
 8. What can we do with afgiftemeldingen?
+9. What is the min and max value that can be reported / transported per vracht & afmelding?
