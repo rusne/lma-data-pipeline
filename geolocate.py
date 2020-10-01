@@ -8,6 +8,7 @@ import pandas as pd
 import geopandas as gpd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
+from shapely import wkt
 
 
 def get_addresses(dataset):
@@ -31,7 +32,7 @@ def get_addresses(dataset):
 
     # concatenate to full address
     addresses['Address'] = addresses[cols[0]].str.cat(addresses[cols[1:]], sep=', ')
-    addresses = addresses.loc[:5]
+    # addresses = addresses.loc[:5]
 
     return addresses
 
@@ -53,12 +54,50 @@ def geocode(addresses):
         func = lambda loc: getattr(loc, coord) if loc else None
         addresses[coord.capitalize()] = addresses['Location'].apply(func)
 
-    # SUGGESTION: merge common locations!!!
+    # create geodataframe with postcode & location
     geometry = gpd.points_from_xy(addresses.Longitude, addresses.Latitude)
     locations = gpd.GeoDataFrame(addresses['Ontdoener_Postcode'], geometry=geometry)
-    locations.set_crs(epsg=4326, inplace=True)  # specify CRS
+    locations = locations.set_crs(epsg=4326, inplace=True)  # specify CRS
 
     return locations
+
+
+def add_locations(locations):
+    """
+    Add locations to dataset in WKT format
+    :param locations: location geodataframe
+    :return: WKT geometry
+    """
+    # import postcode districts
+    districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
+    districts['Centroid'] = districts.geometry.centroid
+
+    # cast district 4-digit postcodes as strings
+    districts['PC4'] = districts['PC4'].astype(str)
+
+    # convert locations postcodes to 4-digit
+    locations['PC4_loc'] = locations['Ontdoener_Postcode'].str[:4]
+
+    # merge locations & districts on geometry
+    # point in polygon (with spatial indexes)
+    merge_geom = gpd.sjoin(locations, districts, how="left", op="within")
+
+    # merge locations & districts on postcode
+    merge_code = pd.merge(locations, districts, how="left", left_on='PC4_loc', right_on='PC4')
+    print(merge_code)
+
+    # check if there is a match on geometry
+    # false: no/wrong point from geocoding
+    condition = merge_geom['PC4_loc'] == merge_geom['PC4']
+
+    # if no match on geometry, match locations & districts on postcode
+    # assign district centroid as location
+    merge_geom.loc[condition, 'geometry'] = merge_code['Centroid']
+
+    # convert geometry into WKT
+    merge_geom['WKT'] = merge_geom.geometry.apply(lambda x: wkt.dumps(x))
+
+    return merge_geom['WKT']
 
 
 if __name__ == "__main__":
@@ -69,21 +108,9 @@ if __name__ == "__main__":
     addresses = get_addresses(dataset)
 
     # geocode with nominatim
-    print('Geocoding...')
+    print('Start geocoding...')
     locations = geocode(addresses)
+    print('Geocoding complete!')
 
-    # import postcode districts
-    districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
-    districts['Centroid'] = districts.geometry.centroid
-
-    print('Point in polygon...')
-    # point in polygon (with spatial indexes)
-    merging = gpd.sjoin(locations, districts, how="left", op="within")
-
-    # check if location & district code match
-    # false: no/wrong point from geocoding
-    print(merging['geometry'])
-    condition = merging['Ontdoener_Postcode'].str.contains("|".join(merging['PC4'].astype(str)))
-    merging.loc[condition, 'geometry'] = merging['Centroid']
-    print(merging['geometry'])
-
+    # update dataset with locations
+    dataset['Ontdoener_Location'] = add_locations(locations)
