@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-# Check for unrealistic amounts
-#   -> kick out wrong data (save separately?) and keep track of how much has been kicked out
-# filter too small or too big amounts
-# Fill empty fields / remove entries
+
+# filter lines:
+# empty company name
+# invalid/empty postcodes --> unless it's not in the Netherlands
+# invalid/empty addresses --> streetname anything but text
+
+# filter too small or too big amounts Gewicht_KG/Aantal_vrachten
+
+# output log : x lines have been removed because of reason y
 
 """
 This module filters useful columns and data points in the original data file
@@ -23,10 +28,10 @@ def run(dataframe):
                    'MeldPeriodeMAAND', 'Gewicht_KG', 'Aantal_vrachten',
                    # Ontdoener
                    'Ontdoener', 'Ontdoener_Postcode', 'Ontdoener_Plaats',
-                   'Ontdoener_Straat', 'Ontdoener_Huisnr',
+                   'Ontdoener_Straat', 'Ontdoener_Huisnr', 'Ontdoener_Land',
                    # Herkomst
                    'Herkomst_Postcode', 'Herkomst_Straat', 'Herkomst_Plaats',
-                   'Herkomst_Huisnr',
+                   'Herkomst_Huisnr', 'Herkomst_Land',
                    # # Afzender
                    # 'Afzender', 'Afzender_Postcode', 'Afzender_Straat',
                    # 'Afzender_Plaats', 'Afzender_Huisnummer',
@@ -44,7 +49,7 @@ def run(dataframe):
                    # 'Ontvanger_Plaats', 'Ontvanger_Huisnummer',
                    # Verwerker
                    'Verwerker', 'Verwerker_Postcode', 'Verwerker_Straat',
-                   'Verwerker_Plaats', 'Verwerker_Huisnummer']
+                   'Verwerker_Plaats', 'Verwerker_Huisnummer', 'Verwerker_Land']
 
     roles = ['Ontdoener', 'Herkomst', 'Verwerker']
 
