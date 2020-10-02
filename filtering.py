@@ -89,23 +89,28 @@ def run(dataframe):
                         # Verwerker
                         'Verwerker', 'Verwerker_Postcode']
 
+    # keep original indexes
+    LMA['idx'] = LMA.index
+
     for field in non_empty_fields:
-        # count row where field is empty
-        e = len(LMA.index) - LMA[field].count()
-        if e > 0:
-            logging.warning('{} lines with no {}'.format(e, field))
+        # keep rows with non empty field
+        not_empty = LMA[field].notnull()
 
-            # keep rows with non empty field
-            not_empty = LMA[field].notnull()
+        # if no postcode, check if country is not Netherlands
+        # note: Verwerker is always in the Netherlands!
+        role = field.split('_')[0]
+        condition = not_empty
+        if 'Postcode' in field and role != 'Verwerker':
+            country = role + '_Land'
+            not_dutch = LMA[country].str.lower() != 'nederland'
+            condition = (not_empty) | (not_dutch)
 
-            # if no postcode, check if country is not Netherlands
-            # note: Verwerker is always in the Netherlands!
-            role = field.split('_')[0]
-            if 'Postcode' in field and role != 'Verwerker':
-                country = role + '_Land'
-                LMA = LMA[(not_empty) | (LMA[country] != 'Nederland')]
-            else:
-                LMA = LMA[not_empty]
+        # filter on condition
+        error = list(LMA[~condition].idx)
+        LMA = LMA[condition]
+
+        if error:
+            logging.warning('Lines {} with no {}'.format(error, field))
 
     logging.info('Final entries: {}'.format(len(LMA.index)))
 
