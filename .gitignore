@@ -1,3 +1,5 @@
 Private_data/
+Public_data/
 .idea
 venv
+__pycache__
