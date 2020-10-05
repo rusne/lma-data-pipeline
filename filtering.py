@@ -89,57 +89,36 @@ def run(dataframe):
                         # Verwerker
                         'Verwerker', 'Verwerker_Postcode']
 
-    # keep original indexes
-    LMA['idx'] = LMA.index
+    # keep original EXCEL indexes
+    LMA['idx'] = LMA.index + 2
 
     for field in non_empty_fields:
         # keep rows with non empty field
         not_empty = LMA[field].notnull()
-
-        # if no postcode, check if country is not Netherlands
-        # note: Verwerker is always in the Netherlands!
-        role = field.split('_')[0]
         condition = not_empty
+
+        # check postcode
+        role = field.split('_')[0]
         if 'Postcode' in field and role != 'Verwerker':
+            # valid postcode: 6 characters
+            valid_postcode = LMA[field].str.len() == 6
+            condition = condition & valid_postcode
+
+            # check country if postcode is empty/invalid & keep non-Dutch
+            # note: Verwerker is always in the Netherlands!
             country = role + '_Land'
             not_dutch = LMA[country].str.lower() != 'nederland'
-            condition = (not_empty) | (not_dutch)
+            condition = condition | not_dutch
+
+        # check for non-zero amounts
+        elif field in ['Gewicht_KG', 'Aantal_vrachten']:
+            non_zero_amounts = LMA[field] > 0
+            condition = condition & non_zero_amounts
 
         # filter on condition
         error = list(LMA[~condition].idx)
         LMA = LMA[condition]
-
         if error:
             logging.warning('Lines {} with no {}'.format(error, field))
 
     logging.info('Final entries: {}'.format(len(LMA.index)))
-
-    # print(len(LMA.index) - LMA['MeldPeriodeMAAND'].count(),)
-    # print('lines do not have a month specified and will be removed')
-#
-#     # Remove those data entries that have empty fields
-#     LMA = LMA[LMA.MeldPeriodeJAAR.notnull()]
-#     LMA = LMA[LMA.MeldPeriodeMAAND.notnull()]
-#
-#
-#     # --2-- filter invalid fields
-#
-#     print(len(LMA.index) - LMA[LMA['Gewicht_KG'] < 1].count(),)
-#     print('lines have specified 0 weight and will be removed')
-#
-#     print(len(LMA.index) - LMA[LMA['Aantal_vrachten'] < 1].count(),)
-#     print('lines have specified 0 trips and will be removed')
-#
-#     for role in roles:
-#
-#         print(len(LMA.index) - LMA[len(LMA[role + '_Postcode']) < 6].count(),)
-#         print('lines have invalid {0} postcode and will be removed'.format(role))
-#
-#
-#     LMA = LMA[LMA[LMA['Gewicht_KG'] >= 1]
-#     LMA = LMA[LMA[LMA['Aantal_vrachten'] >= 1]
-#
-#     for role in roles:
-#
-#         print(len(LMA.index) - LMA[len(LMA[role + '_Postcode']) < 6].count(),)
-#         print('lines have invalid {0} postcode and will be removed'.format(role))
