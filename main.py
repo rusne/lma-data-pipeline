@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 
 import filtering
-# import clean.run
+import clean.run
 # import enhance.run
 # import classify.run
 # import analyze.run
@@ -15,6 +15,7 @@ import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 pd.options.mode.chained_assignment = None
 
+roles = ['Ontdoener', 'Herkomst', 'Verwerker']
 
 if __name__ == '__main__':
     # logging: timestamp, warning level & message
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     logging.info('END PIPELINE...')
 
     # # clean
-    # cleaned_df = clean.run(filtered_df)
+    cleaned_df = clean.run(filtered_df, roles)
     #
     # # enhance
     # geolocated_df = enhance.run(cleaned_df)

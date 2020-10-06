@@ -18,3 +18,5 @@
 9. What is the min and max value that can be reported / transported per vracht & afmelding? --> LMA MEETING
 
 10. Which geolocator can we use?
+
+11. How do we go about the KvK dataset? --> LMA MEETING
