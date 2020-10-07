@@ -5,7 +5,7 @@
 # empty company name
 # invalid/empty postcodes --> unless it's not in the Netherlands
 # invalid/empty addresses --> streetname anything but text
-# valid EWC codes --> 6-digit long
+# valid EWC codes --> 4 leading digits
 
 # filter too small or too big amounts Gewicht_KG/Aantal_vrachten
 
@@ -120,8 +120,8 @@ def run(dataframe):
                 not_dutch = LMA[country].str.lower() != 'nederland'
                 condition = condition | not_dutch
 
-        # check for non-zero amounts
-        if field in ['Gewicht_KG', 'Aantal_vrachten']:
+        # check amounts
+        elif field in ['Gewicht_KG', 'Aantal_vrachten']:
             non_zero_amounts = LMA[field] > 0
             condition = condition & non_zero_amounts
 
@@ -129,7 +129,15 @@ def run(dataframe):
         error = list(LMA[~condition].idx)
         LMA = LMA[condition]
         if error:
-            logging.warning('Lines {} with no {}'.format(len(error), field))
+            logging.warning('Lines {} with no/invalid {}'.format(len(error), field))
+
+    # check average trip amount
+    # it should between (1kg, 30t)
+    condition = (LMA['Gewicht_KG'] / LMA['Aantal_vrachten']).between(1, 30000)
+    error = list(LMA[~condition].idx)
+    LMA = LMA[condition]
+    if error:
+        logging.warning('Lines {} with amount per trip not between (1kg, 30t)'.format(len(error)))
 
     logging.info('Final entries: {}'.format(len(LMA.index)))
 
