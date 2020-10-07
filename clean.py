@@ -75,14 +75,33 @@ def clean_nace(nace):
 
 def name_similarity(group):
     # takes pandas group & returns the most similar name in the group and its similarity score
-    group
-    if len(group.index) == 1:
+
+    # check if there is more than one company in the group
+    groupdistinct = group.drop_duplicates(subset=['Company'])
+    if len(groupdistinct.index) == 1:
         return group
 
-    print(group)
-    # all possibilities
-    matrix = pd.merge(group, group, on='Postcode')
-    # group['text_dist'] = group.apply(lambda x: fuzz.ratio(str(x['orig_zaaknaam']), str(x['Orig_name'])), axis=1)
+    # clean company names from all the typical keywords
+    keywords = ['GEMEENTE', 'AANNEMERSBEDRIJF']
+
+    for keyword in keywords:
+        group['Company'].replace(keyword, '', inplace=True)
+
+    group['Company'] = group['Company'].str.strip()
+
+    # check if there is still more than one company in the group
+    groupdistinct = group.drop_duplicates(subset=['Company'])
+    if len(groupdistinct.index) == 1:
+        return group
+
+    # find how similar company names are within the group
+    matrix = pd.merge(group[['Company', 'Postcode']], group[['Company', 'Postcode']], on='Postcode')
+    matrix['text_dist'] = matrix.apply(lambda x: fuzz.ratio(str(x['Company_x']), str(x['Company_y'])), axis=1)
+
+    # remove self matches
+    matrix = matrix[matrix['text_dist'] != 100]
+
+    print(matrix)
 
     # distances.reset_index(inplace=True)
     # text_distances = distances[distances['text_dist'] >= 50]
@@ -100,7 +119,7 @@ def run(dataframe, roles):
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
 
     actorsets = []  # list of all available actors for recognising the same companies
-    actor_data_cols = ['Name', 'Orig_name', 'Postcode']
+    actor_data_cols = ['Name', 'Orig_name', 'Postcode', 'Plaats', 'Straat', 'Huisnr']
 
     for role in roles:
 
@@ -114,12 +133,6 @@ def run(dataframe, roles):
         dataframe[postcode] = dataframe[postcode].astype('unicode')
         dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
 
-        if role != 'Herkomst':
-            # preserve the original name
-            dataframe[orig_name] = dataframe[role].copy()
-            dataframe[role] = dataframe[role].astype('unicode')
-            dataframe[role] = dataframe[role].apply(clean_company_name)
-
         dataframe[plaats] = dataframe[plaats].astype('unicode')
         dataframe[plaats] = dataframe[plaats].apply(clean_address)
 
@@ -129,12 +142,24 @@ def run(dataframe, roles):
         dataframe[huisnr] = dataframe[huisnr].astype('unicode')
         dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
 
+        if role != 'Herkomst':
+            # preserve the original name
+            dataframe[orig_name] = dataframe[role].copy()
+            dataframe[role] = dataframe[role].astype('unicode')
+            dataframe[role] = dataframe[role].apply(clean_company_name)
+
+            # clean company names from the street & city names
+            dataframe[role].replace(dataframe[postcode], '', inplace=True)
+            dataframe[role].replace(dataframe[straat], '', inplace=True)
+            dataframe[role].replace(dataframe[plaats], '', inplace=True)
+
+
         # making a list of all available actor names & postcodes to recognise the same company
 
         if role == 'Herkomst':
             continue  # herkomst is not a separate role but just a disposal location
         else:
-            actorset = dataframe[[role, orig_name, postcode]]
+            actorset = dataframe[[role, orig_name, postcode, plaats, straat, huisnr]]
 
         actorset.columns = actor_data_cols
 
