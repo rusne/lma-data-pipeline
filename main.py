@@ -31,7 +31,7 @@ if __name__ == '__main__':
     logging.info('LOAD DATASET...')
     try:
         # dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
-        dataframe = pd.read_csv('Private_data/ontvangstmeldingen.tsv', sep='\t', nrows=1000)
+        dataframe = pd.read_csv('Private_data/ontvangstmeldingen.csv', low_memory=False)
     except Exception as error:
         logging.critical(error)
         sys.exit(1)
