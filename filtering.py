@@ -57,7 +57,7 @@ def run(dataframe):
                    # 'Ontvanger_Plaats', 'Ontvanger_Huisnummer',
                    # Verwerker
                    'Verwerker', 'Verwerker_Postcode', 'Verwerker_Straat',
-                   'Verwerker_Plaats', 'Verwerker_Huisnummer']
+                   'Verwerker_Plaats', 'Verwerker_Huisnr']
 
     # filter columns from original dataframe
     logging.info('Filter requested columns...')

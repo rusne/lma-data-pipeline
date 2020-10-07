@@ -103,6 +103,8 @@ def name_similarity(group):
 
     print(matrix)
 
+    # find the right threshold for assuming name similarity
+
     # distances.reset_index(inplace=True)
     # text_distances = distances[distances['text_dist'] >= 50]
     # matched_text = text_distances.loc[text_distances.groupby(['Key'])['text_dist'].idxmax()]
@@ -179,8 +181,8 @@ def run(dataframe, roles):
 
 # #### dev launch #### #
 
-roles = ['Ontdoener', 'Herkomst', 'Verwerker']
-
-dataframe = pd.read_excel('Testing_data/2_filtered_dataset.xlsx')
-
-run(dataframe, roles)
+# roles = ['Ontdoener', 'Herkomst', 'Verwerker']
+#
+# dataframe = pd.read_excel('Testing_data/2_filtered_dataset.xlsx')
+#
+# run(dataframe, roles)

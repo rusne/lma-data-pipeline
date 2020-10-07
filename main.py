@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 
 import filtering
-# import clean
+import clean
 # import enhance.run
 # import classify.run
 # import analyze.run
@@ -30,7 +30,8 @@ if __name__ == '__main__':
     # TEST DATAFRAME
     logging.info('LOAD DATASET...')
     try:
-        dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
+        # dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
+        dataframe = pd.read_csv('Private_data/ontvangstmeldingen.tsv', sep='\t', nrows=1000)
     except Exception as error:
         logging.critical(error)
         sys.exit(1)
@@ -40,8 +41,8 @@ if __name__ == '__main__':
     filtered_df = filtering.run(dataframe)
 
     # # clean
-    # logging.info('CLEAN DATASET...')
-    # cleaned_df = clean.run(filtered_df, roles)
+    logging.info('CLEAN DATASET...')
+    cleaned_df = clean.run(filtered_df, roles)
 
     # end pipeline
     logging.info('END PIPELINE...')
