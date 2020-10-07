@@ -5,6 +5,7 @@
 # empty company name
 # invalid/empty postcodes --> unless it's not in the Netherlands
 # invalid/empty addresses --> streetname anything but text
+# valid EWC codes --> 6-digit long
 
 # filter too small or too big amounts Gewicht_KG/Aantal_vrachten
 
@@ -19,7 +20,7 @@ and returns a dataframe ready for the further analysis
 import logging
 import sys
 import pandas as pd
-
+import numpy as np
 
 def run(dataframe):
     """
@@ -67,6 +68,14 @@ def run(dataframe):
         logging.critical(error)
         sys.exit(1)
 
+    # if 'Herkomst' has all columns empty, copy from 'Ontdoener'
+    Herkomst_columns = [col for col in LMA.columns if 'Herkomst' in col]
+    all_null = [LMA[col].isnull() for col in Herkomst_columns]
+    idx = LMA[np.bitwise_and.reduce(all_null)].index
+    for col in Herkomst_columns:
+        orig_col = 'Ontdoener_' + col.split('_')[-1]
+        LMA.loc[idx, col] = LMA[orig_col]
+
     # filter empty fields
     logging.info('Skip empty fields...')
     non_empty_fields = ['Afvalstroomnummer', 'VerwerkingsmethodeCode',
@@ -99,19 +108,20 @@ def run(dataframe):
 
         # check postcode
         role = field.split('_')[0]
-        if 'Postcode' in field and role != 'Verwerker':
-            # valid postcode: 6 characters
-            valid_postcode = LMA[field].str.len() == 6
+        if 'Postcode' in field:
+            # valid postcode: (4) leading numeric characters
+            valid_postcode = LMA[field].str[:4].str.isnumeric()
             condition = condition & valid_postcode
 
             # check country if postcode is empty/invalid & keep non-Dutch
             # note: Verwerker is always in the Netherlands!
-            country = role + '_Land'
-            not_dutch = LMA[country].str.lower() != 'nederland'
-            condition = condition | not_dutch
+            if role != 'Verwerker':
+                country = role + '_Land'
+                not_dutch = LMA[country].str.lower() != 'nederland'
+                condition = condition | not_dutch
 
         # check for non-zero amounts
-        elif field in ['Gewicht_KG', 'Aantal_vrachten']:
+        if field in ['Gewicht_KG', 'Aantal_vrachten']:
             non_zero_amounts = LMA[field] > 0
             condition = condition & non_zero_amounts
 
@@ -119,6 +129,8 @@ def run(dataframe):
         error = list(LMA[~condition].idx)
         LMA = LMA[condition]
         if error:
-            logging.warning('Lines {} with no {}'.format(error, field))
+            logging.warning('Lines {} with no {}'.format(len(error), field))
 
     logging.info('Final entries: {}'.format(len(LMA.index)))
+
+    return LMA

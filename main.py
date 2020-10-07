@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 
 import filtering
-import clean.run
+# import clean
 # import enhance.run
 # import classify.run
 # import analyze.run
@@ -39,12 +39,13 @@ if __name__ == '__main__':
     logging.info('FILTER DATASET...')
     filtered_df = filtering.run(dataframe)
 
+    # # clean
+    # logging.info('CLEAN DATASET...')
+    # cleaned_df = clean.run(filtered_df, roles)
+
     # end pipeline
     logging.info('END PIPELINE...')
 
-    # # clean
-    cleaned_df = clean.run(filtered_df, roles)
-    #
     # # enhance
     # geolocated_df = enhance.run(cleaned_df)
     #
