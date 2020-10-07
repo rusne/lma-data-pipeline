@@ -3,6 +3,7 @@
 
 import numpy as np
 import pandas as pd
+from fuzzywuzzy import fuzz
 
 
 def clean_company_name(name):
@@ -31,9 +32,6 @@ def clean_company_name(name):
 
     # if len(name) < 2:
     #     print orig_name
-
-    # remove all city names and other typical keywords
-    ['AANNEMERSBEDRIJF', 'GEMEENTE']
 
     return name
 
@@ -73,6 +71,22 @@ def clean_huisnr(nr):
 def clean_nace(nace):
     nace = ''.join(filter(lambda x: x in '0123456789', nace))
     return nace
+
+
+def name_similarity(group):
+    # takes pandas group & returns the most similar name in the group and its similarity score
+    group
+    if len(group.index) == 1:
+        return group
+
+    print(group)
+    # all possibilities
+    matrix = pd.merge(group, group, on='Postcode')
+    # group['text_dist'] = group.apply(lambda x: fuzz.ratio(str(x['orig_zaaknaam']), str(x['Orig_name'])), axis=1)
+
+    # distances.reset_index(inplace=True)
+    # text_distances = distances[distances['text_dist'] >= 50]
+    # matched_text = text_distances.loc[text_distances.groupby(['Key'])['text_dist'].idxmax()]
 
 
 def run(dataframe, roles):
@@ -131,10 +145,10 @@ def run(dataframe, roles):
     actors.drop_duplicates(inplace=True)
 
     # 1) BY CLEANED NAME ONLY
-    names = actors[['Name']].drop_duplicates()
-    print(names)
+    actors['Company'] = actors['Name']
 
     # 2) BY POSTCODE & SIMILAR NAME
+    actors.groupby(actors['Postcode']).apply(name_similarity)
 
 
 

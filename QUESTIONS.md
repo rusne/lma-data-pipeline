@@ -15,7 +15,7 @@
 
 8. What can we do with afgiftemeldingen? --> LMA MEETING
 
-9. What is the min and max value that can be reported / transported per vracht & afmelding? --> LMA MEETING
+9. What is the min and max value that can be reported / transported per vracht & afmelding? --> 1kg < gewicht/aantal_vrachten < 30t
 
 10. Which geolocator can we use?
 
