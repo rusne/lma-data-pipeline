@@ -63,7 +63,8 @@ def run(dataframe):
     logging.info('Filter requested columns...')
     try:
         LMA = dataframe[LMA_columns]
-        logging.info('Original entries: {}'.format(len(LMA.index)))
+        original_entries = len(LMA.index)
+        logging.info('Original entries: {}'.format(original_entries))
     except Exception as error:
         logging.critical(error)
         sys.exit(1)
@@ -139,6 +140,8 @@ def run(dataframe):
     if error:
         logging.warning('Lines {} with amount per trip not between (1kg, 30t)'.format(len(error)))
 
-    logging.info('Final entries: {}'.format(len(LMA.index)))
+    final_entries = len(LMA.index)
+    ratio = round(final_entries / original_entries * 100, 1)
+    logging.info('Final entries: {} ({}%)'.format(final_entries, ratio))
 
     return LMA
