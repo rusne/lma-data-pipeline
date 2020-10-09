@@ -118,7 +118,8 @@ def run(dataframe):
             # note: Verwerker is always in the Netherlands!
             if role != 'Verwerker':
                 country = role + '_Land'
-                not_dutch = LMA[country].str.lower() != 'nederland'
+                # ignore nan values
+                not_dutch = LMA[LMA[country].notnull()][country].str.lower() != 'nederland'
                 condition = condition | not_dutch
 
         # check amounts

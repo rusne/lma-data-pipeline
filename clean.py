@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
+import logging
 
 
 def clean_company_name(name):
@@ -53,8 +54,7 @@ def clean_postcode(postcode):
 
 
 def clean_description(desc):
-    desc = desc.strip()
-    desc = desc.lower()
+    desc = desc.strip().lower()
     desc = desc.replace(u'\xa0', u' ')
     desc = ' '.join(desc.split())
     if desc == 'nan':
@@ -117,65 +117,73 @@ def run(dataframe, roles):
     """
 
     # clean the BenamingAfval field
-    dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
-    dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
+    # remove extra spaces & turn to lowercase
+    # dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
+    logging.info('Clean descriptions (BenamingAfval)...')
+    dataframe['BenamingAfval'] = dataframe['BenamingAfval'].str.strip().str.lower()
 
     actorsets = []  # list of all available actors for recognising the same companies
-    actor_data_cols = ['Name', 'Orig_name', 'Postcode', 'Plaats', 'Straat', 'Huisnr']
+    # actor_data_cols = ['Name', 'Orig_name', 'Postcode', 'Plaats', 'Straat', 'Huisnr']
+    actor_cols = {
+        'Postcode': [('strip', []),
+                     ('upper', [])]
+    }
 
     for role in roles:
+        for col in actor_cols.keys():
+            field = '_'.join([role, col])
+            dataframe[field] = dataframe[field].astype('str')
 
-        postcode = '{0}_Postcode'.format(role)
-        plaats = '{0}_Plaats'.format(role)
-        straat = '{0}_Straat'.format(role)
-        huisnr = '{0}_Huisnr'.format(role)
-        orig_name = '{0}_Origname'.format(role)
-
-        # data cleaning
-        dataframe[postcode] = dataframe[postcode].astype('unicode')
-        dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
-
-        dataframe[plaats] = dataframe[plaats].astype('unicode')
-        dataframe[plaats] = dataframe[plaats].apply(clean_address)
-
-        dataframe[straat] = dataframe[straat].astype('unicode')
-        dataframe[straat] = dataframe[straat].apply(clean_address)
-
-        dataframe[huisnr] = dataframe[huisnr].astype('unicode')
-        dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
-
-        if role != 'Herkomst':
-            # preserve the original name
-            dataframe[orig_name] = dataframe[role].copy()
-            dataframe[role] = dataframe[role].astype('unicode')
-            dataframe[role] = dataframe[role].apply(clean_company_name)
-
-            # clean company names from the street & city names
-            dataframe[role].replace(dataframe[postcode], '', inplace=True)
-            dataframe[role].replace(dataframe[straat], '', inplace=True)
-            dataframe[role].replace(dataframe[plaats], '', inplace=True)
-
-
-        # making a list of all available actor names & postcodes to recognise the same company
-
-        if role == 'Herkomst':
-            continue  # herkomst is not a separate role but just a disposal location
-        else:
-            actorset = dataframe[[role, orig_name, postcode, plaats, straat, huisnr]]
-
-        actorset.columns = actor_data_cols
-
-        actorsets.append(actorset)
-
-    # recognising the same companies
-    actors = pd.concat(actorsets)
-    actors.drop_duplicates(inplace=True)
-
-    # 1) BY CLEANED NAME ONLY
-    actors['Company'] = actors['Name']
-
-    # 2) BY POSTCODE & SIMILAR NAME
-    actors.groupby(actors['Postcode']).apply(name_similarity)
+            for func in actor_cols[col]:
+                name, args = func
+                dataframe[field] = getattr(dataframe[field].str, name)(*args)
+                dataframe.loc[dataframe[field] == 'NAN', field] = np.NaN
+    #
+    #     # data cleaning
+    #     dataframe[postcode] = dataframe[postcode].astype('unicode')
+    #     dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
+    #
+    #     dataframe[plaats] = dataframe[plaats].astype('unicode')
+    #     dataframe[plaats] = dataframe[plaats].apply(clean_address)
+    #
+    #     dataframe[straat] = dataframe[straat].astype('unicode')
+    #     dataframe[straat] = dataframe[straat].apply(clean_address)
+    #
+    #     dataframe[huisnr] = dataframe[huisnr].astype('unicode')
+    #     dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
+    #
+    #     if role != 'Herkomst':
+    #         # preserve the original name
+    #         dataframe[orig_name] = dataframe[role].copy()
+    #         dataframe[role] = dataframe[role].astype('unicode')
+    #         dataframe[role] = dataframe[role].apply(clean_company_name)
+    #
+    #         # clean company names from the street & city names
+    #         dataframe[role].replace({postcode, ''}, inplace=True)
+    #         dataframe[role].replace({straat, ''}, inplace=True)
+    #         dataframe[role].replace({plaats, ''}, inplace=True)
+    #
+    #
+    #     # making a list of all available actor names & postcodes to recognise the same company
+    #
+    #     if role == 'Herkomst':
+    #         continue  # herkomst is not a separate role but just a disposal location
+    #     else:
+    #         actorset = dataframe[[role, orig_name, postcode, plaats, straat, huisnr]]
+    #
+    #     actorset.columns = actor_data_cols
+    #
+    #     actorsets.append(actorset)
+    #
+    # # recognising the same companies
+    # actors = pd.concat(actorsets)
+    # actors.drop_duplicates(inplace=True)
+    #
+    # # 1) BY CLEANED NAME ONLY
+    # actors['Company'] = actors['Name']
+    #
+    # # 2) BY POSTCODE & SIMILAR NAME
+    # actors.groupby(actors['Postcode']).apply(name_similarity)
 
 
 
