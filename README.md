@@ -6,6 +6,7 @@ General to dos:
 - coding style
 - logging
 - tests
+    + ample test coverage to upgrade python version or dependencies confidently
 - sanity checks
 
 ## Usage
@@ -47,6 +48,16 @@ pip install -r requirements.txt
 ```
 python main.py
 ```
+
+### Adding dependencies
+
+Add the desired dependency to `requirements.txt` manually, then
+
+```
+pip install -r requirements.txt
+```
+
+Don't use `pip freeze > requirements.txt`, because that will put dependencies of dependencies in `requirements.txt` and they will not be removed on a `pip uninstall`.
 
 # Testing data
 
