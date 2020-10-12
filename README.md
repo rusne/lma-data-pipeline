@@ -8,6 +8,46 @@ General to dos:
 - tests
 - sanity checks
 
+## Usage
+
+### Setup
+
+This pipeline is written for Python 3.
+
+Install the requirements:
+
+```
+pip install -r requirements.txt
+```
+
+#### Windows
+
+On windows, you will run into an error installing the `fiona` dependency. To fix this, first install `gdal` and `fiona` manually. Pick the wheel (`.whl`) file for your version of python from these link:
+
+https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal
+https://www.lfd.uci.edu/~gohlke/pythonlibs/#fiona
+
+For example, for python 3.8 on a 64 bit computer, download: `GDAL‑3.1.3‑cp38‑cp38‑win_amd64.whl`.
+
+And then install using:
+
+```
+pip install GDAL‑3.1.3‑cp38‑cp38‑win_amd64.whl
+pip install Fiona‑1.8.17‑cp38‑cp38‑win_amd64.whl
+```
+
+Then run:
+
+```
+pip install -r requirements.txt
+```
+
+### Running
+
+```
+python main.py
+```
+
 # Testing data
 
 Testing data is a file that has the same structure as the data dump we receive from the LMA and is based on the real errors found in the datasets.
