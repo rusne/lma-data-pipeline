@@ -8,6 +8,12 @@ import logging
 import re
 
 
+def clean_description(desc):
+    desc = desc.lower()
+    
+    return desc
+
+
 # clean postcodes
 def clean_postcode(postcode):
     # postcodes should contain only:
@@ -47,6 +53,13 @@ def clean_address(address):
     return address
 
 
+def clean_huisnr(nr):
+    # house numbers should contain only numbers
+    nr = nr.split('.')[0]
+    nr = re.sub('[^0-9]', ' ', nr)
+    return nr
+
+
 # def clean_company_name(name):
 #
 #     # remove all non-ASCII characters
@@ -80,19 +93,10 @@ def clean_address(address):
 #
 #
 #
-# def clean_description(desc):
-#     desc = desc.strip().lower()
-#     desc = desc.replace(u'\xa0', u' ')
-#     desc = ' '.join(desc.split())
-#     if desc == 'nan':
-#         return np.NaN
-#     return desc
+
 #
 #
-# def clean_huisnr(nr):
-#     nr = nr.split('.')[0]
-#     nr = ''.join(filter(lambda x: x in '0123456789', nr))
-#     return nr
+
 #
 #
 # def clean_nace(nace):
@@ -146,25 +150,48 @@ def run(df, roles):
     # remove extra spaces & turn to lowercase
     # dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
     logging.info('Clean descriptions (BenamingAfval)...')
-    df['BenamingAfval'] = df['BenamingAfval'].str.strip().str.lower()
+    df['BenamingAfval'] = df['BenamingAfval'].astype(str).apply(clean_description)
 
     actorsets = []  # list of all available actors for recognising the same companies
     # actor_data_cols = ['Name', 'Orig_name', 'Postcode', 'Plaats', 'Straat', 'Huisnr']
-    actor_cols = [
-        ('Postcode', clean_postcode),
-        ('Plaats', clean_address),
-        ('Straat', clean_address)
-    ]
 
-    # check all actor columns for each role
+    # check actor columns for each role
     # cast non-null values as strings & apply cleaning function
+    logging.info('Clean location name & info...')
     for role in roles:
-        for col in actor_cols:
-            name, function = col
-            name = '_'.join([role, name])
-            df.loc[df[name].notnull(), name] = df[name].astype(str).apply(function)
-            print(list(df[name]))
+        # clean postcode
+        postcode = role + '_Postcode'
+        df.loc[df[postcode].notnull(), postcode] = df[postcode].astype(str).apply(clean_postcode)
 
+        # clean plaats
+        plaats = role + '_Plaats'
+        df.loc[df[plaats].notnull(), plaats] = df[plaats].astype(str).apply(clean_address)
+
+        # clean straat
+        straat = role + '_Straat'
+        df.loc[df[straat].notnull(), straat] = df[straat].astype(str).apply(clean_address)
+
+        # clean huisnr
+        huisnr = role + '_Huisnr'
+        df.loc[df[huisnr].notnull(), huisnr] = df[huisnr].astype(str).apply(clean_huisnr)
+
+        print
+        # clean name
+        # Herkomst has none!
+        if role != 'Herkomst':
+            pass
+
+
+        #     df[role].replace({postcode, ''}, inplace=True)
+        #     df[role].replace({straat, ''}, inplace=True)
+        #     df[role].replace({plaats, ''}, inplace=True)
+
+            # # preserve the original name
+            # dataframe[orig_name] = dataframe[role].copy()
+            # dataframe[role] = dataframe[role].astype('unicode')
+            # dataframe[role] = dataframe[role].apply(clean_company_name)
+            #
+            # # clean company names from the street & city names
 
     #
     #     dataframe[plaats] = dataframe[plaats].astype('unicode')
@@ -176,16 +203,7 @@ def run(df, roles):
     #     dataframe[huisnr] = dataframe[huisnr].astype('unicode')
     #     dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
     #
-    #     if role != 'Herkomst':
-    #         # preserve the original name
-    #         dataframe[orig_name] = dataframe[role].copy()
-    #         dataframe[role] = dataframe[role].astype('unicode')
-    #         dataframe[role] = dataframe[role].apply(clean_company_name)
-    #
-    #         # clean company names from the street & city names
-    #         dataframe[role].replace({postcode, ''}, inplace=True)
-    #         dataframe[role].replace({straat, ''}, inplace=True)
-    #         dataframe[role].replace({plaats, ''}, inplace=True)
+
     #
     #
     #     # making a list of all available actor names & postcodes to recognise the same company
