@@ -144,13 +144,12 @@ def name_similarity(group):
         return group
 
     # dataframe inner join on postcode
-    matrix = pd.merge(group, group, on='Postcode', how='inner')
+    matrix = pd.merge(group, group, on='Postcode')
     s = int(len(matrix.index)**0.5)
-    matrix = matrix[np.triu(np.ones((s, s))).astype(np.bool).flatten()]
+    matrix = matrix[np.triu(np.ones((s, s)), k=1).astype(np.bool).flatten()]
 
     # compute name similarity
     matrix['text_dist'] = matrix.apply(lambda x: fuzz.ratio(str(x['Name_x']), str(x['Name_y'])), axis=1)
-    print(matrix[['Name_x', 'Name_y', 'text_dist']])
 
     # similarity over 50%
     matrix = matrix[matrix['text_dist'].between(50, 99)]
@@ -200,7 +199,7 @@ def run(df, roles):
     # remove extra spaces & turn to lowercase
     # dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
     logging.info('Clean descriptions (BenamingAfval)...')
-    df.loc[df['BenamingAfval'].notnull(), 'BenamingAfval'] = df['BenamingAfval'].astype(str).apply(clean_description)\
+    df.loc[df['BenamingAfval'].notnull(), 'BenamingAfval'] = df['BenamingAfval'].astype(str).apply(clean_description)
 
     actorsets = []  # list of all available actors for recognising the same companies
     # actor_data_cols = ['Name', 'Orig_name', 'Postcode', 'Plaats', 'Straat', 'Huisnr']
@@ -233,7 +232,7 @@ def run(df, roles):
             df[orig_name] = df[role]
             df.loc[df[role].notnull(), role] = df[role].astype(str).apply(clean_company_name)
 
-            # clean company nameos of:
+            # clean company names of:
             # 1) postcodes
             # df[role] = df.apply(lambda x: x[role].replace(str(x[postcode]), ''), axis=1)
 

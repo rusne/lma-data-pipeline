@@ -4,8 +4,9 @@ import logging
 import sys
 import pandas as pd
 
-import filtering
-import clean
+import clean_new
+# import filtering
+# import clean
 # import enhance.run
 # import classify.run
 # import analyze.run
@@ -36,16 +37,20 @@ if __name__ == '__main__':
         logging.critical(error)
         raise
 
-    # filter
-    logging.info('FILTER DATASET...')
-    filtered_df = filtering.run(dataframe)
-
-    # clean
+    # CLEAN DATASET
     logging.info('CLEAN DATASET...')
-    cleaned_df = clean.run(filtered_df, roles)
+    cleaned_df = clean_new.run(dataframe, roles)
 
     # end pipeline
     logging.info('END PIPELINE...')
+
+    # # filter
+    # logging.info('FILTER DATASET...')
+    # filtered_df = filtering.run(dataframe)
+    #
+    # # clean
+    # logging.info('CLEAN DATASET...')
+    # cleaned_df = clean.run(filtered_df, roles)
 
     # # enhance
     # geolocated_df = enhance.run(cleaned_df)
