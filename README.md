@@ -59,6 +59,32 @@ pip install -r requirements.txt
 
 Don't use `pip freeze > requirements.txt`, because that will put dependencies of dependencies in `requirements.txt` and they will not be removed on a `pip uninstall`.
 
+### Pre-commit hook
+
+We use [pre-commit](https://pre-commit.com/) to run part of the the continuous integration (CI) pipeline locally. To run before every commit, do:
+
+```
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
+This will run several checks on the files you are about to commit and may prevent you from commiting if any issues have been found. For example, if `black` has made changes to a file, you will have to `git add` the changes and `git commit` again.
+
+Please note that only files that you are committing will be checked. For example, `pytest` will only run tests in that specific file even though your changes might have broken other tests.
+
+To skip all pre-commit checks:
+
+```
+git commit --no-verify
+```
+
+To skip a single check (also see the [pre-commit documentation](https://pre-commit.com/#temporarily-disabling-hooks)):
+
+```
+SKIP=flake8 git commit
+```
+
+
 # Testing data
 
 Testing data is a file that has the same structure as the data dump we receive from the LMA and is based on the real errors found in the datasets.

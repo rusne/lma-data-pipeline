@@ -1,0 +1,26 @@
+# Use a "local repo" so we can manage the dependencies with
+# requirements-dev.txt and use the same config in Continuous Integration.
+# See: https://pre-commit.com/#repository-local-hooks
+repos:
+  - repo: local
+    hooks:
+      - id: flake8
+        name: flake8
+        language: system
+        entry: flake8
+        files: \.py$
+      - id: bandit
+        name: bandit
+        language: system
+        entry: bandit
+        files: \.py$
+      - id: mypy
+        name: mypy
+        language: system
+        entry: mypy
+        files: \.py$
+      - id: pytest
+        name: pytest
+        language: system
+        entry: pytest
+        files: \.py$
