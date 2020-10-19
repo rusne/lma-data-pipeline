@@ -116,6 +116,7 @@ def run(dataframe):
 
     # concatenate & remove duplicates
     all_KvK = pd.concat(all_versions)
+    # TODO (Marin): what does activenq stand for?
     all_KvK.drop_duplicates(subset=["key", "activenq"], inplace=True)
 
     # geolocate
