@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 import logging
-import sys
 import pandas as pd
 
-import clean_new
-# import filtering
-# import clean
+import filtering
+# import clean.run
 # import enhance.run
 # import classify.run
 # import analyze.run
@@ -31,26 +29,21 @@ if __name__ == '__main__':
     # TEST DATAFRAME
     logging.info('LOAD DATASET...')
     try:
-        # dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
-        dataframe = pd.read_csv('Private_data/ontvangstmeldingen.csv', low_memory=False)
+        dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
     except Exception as error:
         logging.critical(error)
         raise
 
-    # CLEAN DATASET
+    # filter
+    logging.info('FILTER DATASET...')
+    filtered_df = filtering.run(dataframe)
+
+    # clean
     logging.info('CLEAN DATASET...')
-    cleaned_df = clean_new.run(dataframe, roles)
+    cleaned_df = clean.run(filtered_df, roles)
 
     # end pipeline
     logging.info('END PIPELINE...')
-
-    # # filter
-    # logging.info('FILTER DATASET...')
-    # filtered_df = filtering.run(dataframe)
-    #
-    # # clean
-    # logging.info('CLEAN DATASET...')
-    # cleaned_df = clean.run(filtered_df, roles)
 
     # # enhance
     # geolocated_df = enhance.run(cleaned_df)
