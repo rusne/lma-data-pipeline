@@ -1,16 +1,12 @@
-#!/usr/bin/env python3
-
 """
 This module filters useful columns and data points in the original data file
 logs how many erroneous data points have been filtered on which basis
 and returns a dataframe ready for the further analysis
 """
-
-import pandas as pd
 import logging
 
 
-def run(dataframe):
+def run(dataframe, roles):
     # selection of the columns we want to include in our analysis
     LMA_columns = ['Afvalstroomnummer', 'VerwerkingsmethodeCode',
                    'VerwerkingsOmschrijving', 'RouteInzameling',
@@ -52,6 +48,23 @@ def run(dataframe):
 
     # filter empty fields
     # log all empty fields before removing them
+    # empty role columns
+    for role in roles:
+        # empty company name
+        # note: Herkomst does not have company name!
+        if role != 'Herkomst':
+            e = len(LMA[LMA[role].isnull()].index)
+            if e:
+                LMA = LMA[LMA[role].notnull()]
+                logging.warning(f'{e} lines do not have a {role} specified and will be removed')
+
+        # empty postcode
+        postcode = role + '_Postcode'
+        e = len(LMA[LMA[postcode].isnull()].index)
+        if e:
+            LMA = LMA[LMA[postcode].notnull()]
+            logging.warning(f'{e} lines do not have a {postcode} specified and will be removed')
+
     # empty year
     e = len(LMA[LMA['MeldPeriodeJAAR'].isnull()].index)
     if e:
@@ -75,5 +88,7 @@ def run(dataframe):
     if e:
         LMA = LMA[LMA['Aantal_vrachten'] >= 1]
         logging.warning(f'{e} lines have specified 0 trips and will be removed')
+
+    logging.info(f'Final dataset length: {len(LMA.index)} lines')
 
     return LMA

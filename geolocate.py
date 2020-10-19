@@ -9,45 +9,34 @@ import geopandas as gpd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from shapely import wkt
+import logging
 
 
-def get_addresses(dataset):
-    """
-    Extract address-related columns for geocoding
-    :param dataset: dataset pandas dataframe
-    :return: address pandas dataframe
-    """
+def get_addresses(dataframe, role):
     # address-related column names
     names = [
         'Straat',  # street
         'Huisnr',  # house number
         'Postcode',  # post code
         'Plaats',  # city
-        'Land',  # country
     ]
-    cols = ["_".join(["Ontdoener", name]) for name in names]
+    cols = ["_".join([role, name]) for name in names]
 
     # extract columns & cast as strings
-    addresses = dataset.loc[:, cols].astype(str)
+    addresses = dataframe[cols].astype(str)
 
     # concatenate to full address
     addresses['Address'] = addresses[cols[0]].str.cat(addresses[cols[1:]], sep=', ')
-    # addresses = addresses.loc[:5]
 
     return addresses
 
 
-def geocode(addresses):
-    """
-    Find locations by address with nominatim service
-    :param addresses: address pandas dataframe
-    :return: address pandas dataframe with geographic coordinates
-    """
+def geocode(addresses, role):
     # nominatim geocoding
     # delay between request to assert access to server
     locator = Nominatim(user_agent="CustomGeocoder")
-    geocode = RateLimiter(locator.geocode, min_delay_seconds=1)
-    addresses['Location'] = addresses['Address'].apply(geocode)
+    geocoder = RateLimiter(locator.geocode, min_delay_seconds=1)
+    addresses['Location'] = addresses['Address'].apply(geocoder)
 
     # extract location coordinates (WGS84)
     for coord in ['longitude', 'latitude']:
@@ -56,39 +45,36 @@ def geocode(addresses):
 
     # create geodataframe with postcode & location
     geometry = gpd.points_from_xy(addresses.Longitude, addresses.Latitude)
-    locations = gpd.GeoDataFrame(addresses['Ontdoener_Postcode'], geometry=geometry)
+    locations = gpd.GeoDataFrame(addresses[role + '_Postcode'], geometry=geometry)
     locations = locations.set_crs(epsg=4326, inplace=True)  # specify CRS
 
     return locations
 
 
-def add_locations(locations):
-    """
-    Add locations to dataset in WKT format
-    :param locations: location geodataframe
-    :return: WKT geometry
-    """
+def add_locations(locations, role):
     # import postcode districts
     districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
+    districts = districts[['geometry', 'PC4']]
     districts['Centroid'] = districts.geometry.centroid
+
+    # convert locations postcodes to 4-digit
+    locations['PC4_loc'] = locations[role + '_Postcode'].str[:4]
 
     # cast district 4-digit postcodes as strings
     districts['PC4'] = districts['PC4'].astype(str)
 
-    # convert locations postcodes to 4-digit
-    locations['PC4_loc'] = locations['Ontdoener_Postcode'].str[:4]
-
-    # merge locations & districts on geometry
+    # merge locations with districts on geometry
     # point in polygon (with spatial indexes)
     merge_geom = gpd.sjoin(locations, districts, how="left", op="within")
 
-    # merge locations & districts on postcode
-    merge_code = pd.merge(locations, districts, how="left", left_on='PC4_loc', right_on='PC4')
-    print(merge_code)
+    # merge locations with districts on postcode
+    # preserve original indices from locations
+    merge_code = locations.merge(districts, how='left', left_on='PC4_loc', right_on='PC4')
+    merge_code = merge_code.set_axis(locations.index)
 
     # check if there is a match on geometry
     # false: no/wrong point from geocoding
-    condition = merge_geom['PC4_loc'] == merge_geom['PC4']
+    condition = merge_geom['PC4'] != merge_code['PC4']
 
     # if no match on geometry, match locations & districts on postcode
     # assign district centroid as location
@@ -100,17 +86,26 @@ def add_locations(locations):
     return merge_geom['WKT']
 
 
-if __name__ == "__main__":
-    # import testing dataset as pandas dataframe
-    dataset = pd.read_excel("Testing_data/3_cleaned_dataset.xlsx")
+def run(dataframe, roles):
+    # silence geopy logger
+    logger = logging.getLogger('geopy')
+    logger.propagate = False
 
-    # collect address-related columns
-    addresses = get_addresses(dataset)
+    # silence fiona logger
+    logger = logging.getLogger('fiona')
+    logger.propagate = False
 
-    # geocode with nominatim
-    print('Start geocoding...')
-    locations = geocode(addresses)
-    print('Geocoding complete!')
+    logging.info('Start geocoding...')
+    # assign locations to companies
+    for role in roles:
+        # collect address-related columns
+        addresses = get_addresses(dataframe, role)
 
-    # update dataset with locations
-    dataset['Ontdoener_Location'] = add_locations(locations)
+        # geocode with nominatim
+        locations = geocode(addresses, role)
+
+        # update dataset with locations
+        dataframe[role + '_Location'] = add_locations(locations, role)
+
+    logging.info('Geocoding complete!')
+    return dataframe
