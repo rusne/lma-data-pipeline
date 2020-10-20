@@ -12,53 +12,34 @@ from shapely import wkt
 import logging
 
 
-def get_addresses(dataframe, role):
-    # address-related column names
-    names = [
-        'Straat',  # street
-        'Huisnr',  # house number
-        'Postcode',  # post code
-        'Plaats',  # city
-    ]
-    cols = ["_".join([role, name]) for name in names]
-
-    # extract columns & cast as strings
-    addresses = dataframe[cols].astype(str)
-
-    # concatenate to full address
-    addresses['Address'] = addresses[cols[0]].str.cat(addresses[cols[1:]], sep=', ')
-
-    return addresses
-
-
-def geocode(addresses, role):
+def geocode(addresses):
     # nominatim geocoding
     # delay between request to assert access to server
     locator = Nominatim(user_agent="CustomGeocoder")
     geocoder = RateLimiter(locator.geocode, min_delay_seconds=1)
-    addresses['Location'] = addresses['Address'].apply(geocoder)
+    addresses['location'] = addresses['adres'].apply(geocoder)
 
     # extract location coordinates (WGS84)
     for coord in ['longitude', 'latitude']:
         func = lambda loc: getattr(loc, coord) if loc else None
-        addresses[coord.capitalize()] = addresses['Location'].apply(func)
+        addresses[coord] = addresses['location'].apply(func)
 
     # create geodataframe with postcode & location
-    geometry = gpd.points_from_xy(addresses.Longitude, addresses.Latitude)
-    locations = gpd.GeoDataFrame(addresses[role + '_Postcode'], geometry=geometry)
+    geometry = gpd.points_from_xy(addresses.longitude, addresses.latitude)
+    locations = gpd.GeoDataFrame(addresses['postcode'], geometry=geometry)
     locations = locations.set_crs(epsg=4326, inplace=True)  # specify CRS
 
     return locations
 
 
-def add_locations(locations, role):
+def add_wkt(locations):
     # import postcode districts
     districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
     districts = districts[['geometry', 'PC4']]
-    districts['Centroid'] = districts.geometry.centroid
+    districts['centroid'] = districts.geometry.centroid
 
     # convert locations postcodes to 4-digit
-    locations['PC4_loc'] = locations[role + '_Postcode'].str[:4]
+    locations['PC4_loc'] = locations['postcode'].str[:4]
 
     # cast district 4-digit postcodes as strings
     districts['PC4'] = districts['PC4'].astype(str)
@@ -78,15 +59,15 @@ def add_locations(locations, role):
 
     # if no match on geometry, match locations & districts on postcode
     # assign district centroid as location
-    merge_geom.loc[condition, 'geometry'] = merge_code['Centroid']
+    merge_geom.loc[condition, 'geometry'] = merge_code['centroid']
 
     # convert geometry into WKT
-    merge_geom['WKT'] = merge_geom.geometry.apply(lambda x: wkt.dumps(x))
+    merge_geom['wkt'] = merge_geom.geometry.apply(lambda x: wkt.dumps(x))
 
-    return merge_geom['WKT']
+    return merge_geom['wkt']
 
 
-def run(dataframe, roles):
+def run(addresses):
     # silence geopy logger
     logger = logging.getLogger('geopy')
     logger.propagate = False
@@ -95,17 +76,13 @@ def run(dataframe, roles):
     logger = logging.getLogger('fiona')
     logger.propagate = False
 
-    logging.info('Start geocoding...')
-    # assign locations to companies
-    for role in roles:
-        # collect address-related columns
-        addresses = get_addresses(dataframe, role)
+    # assign locations to addresses
+    # geocode with nominatim
+    logging.info(f'Start geocoding {len(addresses.index)} addresses...')
+    locations = geocode(addresses)
 
-        # geocode with nominatim
-        locations = geocode(addresses, role)
-
-        # update dataset with locations
-        dataframe[role + '_Location'] = add_locations(locations, role)
+    # update locations with Well-Known Text (WKT)
+    locations['wkt'] = add_wkt(locations)
 
     logging.info('Geocoding complete!')
-    return dataframe
+    return locations['wkt']

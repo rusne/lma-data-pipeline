@@ -1,6 +1,7 @@
 # Clean typos
 import numpy as np
 import logging
+import geolocate
 
 
 def clean_description(desc):
@@ -61,6 +62,11 @@ def clean_huisnr(nr):
     return nr
 
 
+def clean_nace(nace):
+    nace = ''.join(filter(lambda x: x in '0123456789', nace))
+    return nace
+
+
 def run(dataframe, roles):
     # clean the BenamingAfval field
     logging.info('Cleaning descriptions...')
@@ -71,34 +77,43 @@ def run(dataframe, roles):
     logging.info('Cleaning role columns...')
     for role in roles:
         # list columns for cleaning
-        postcode = '{0}_Postcode'.format(role)
-        plaats = '{0}_Plaats'.format(role)
-        straat = '{0}_Straat'.format(role)
-        huisnr = '{0}_Huisnr'.format(role)
-        orig_name = '{0}_Origname'.format(role)
-
-        # clean postcode
-        dataframe[postcode] = dataframe[postcode].astype('unicode')
-        dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
+        orig_name = f'{role}_Origname'
+        straat = f'{role}_Straat'
+        huisnr = f'{role}_Huisnr'
+        postcode = f'{role}_Postcode'
+        plaats = f'{role}_Plaats'
 
         # clean company name
         # note: Herkomst does not have name!
         if role != 'Herkomst':
             # preserve the original name
             dataframe[orig_name] = dataframe[role].copy()
-            dataframe[role] = dataframe[role].astype('unicode')
+            dataframe[role] = dataframe[role].astype('str')
             dataframe[role] = dataframe[role].apply(clean_company_name)
 
-        # clean city name
-        dataframe[plaats] = dataframe[plaats].astype('unicode')
-        dataframe[plaats] = dataframe[plaats].apply(clean_address)
-
         # clean street name
-        dataframe[straat] = dataframe[straat].astype('unicode')
+        dataframe[straat] = dataframe[straat].astype('str')
         dataframe[straat] = dataframe[straat].apply(clean_address)
 
         # clean house number
-        dataframe[huisnr] = dataframe[huisnr].astype('unicode')
+        dataframe[huisnr] = dataframe[huisnr].astype('str')
         dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
+
+        # clean postcode
+        dataframe[postcode] = dataframe[postcode].astype('str')
+        dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
+
+        # clean city name
+        dataframe[plaats] = dataframe[plaats].astype('str')
+        dataframe[plaats] = dataframe[plaats].apply(clean_address)
+
+        # prepare address for geolocation
+        dataframe['adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
+
+        # geolocate
+        logging.info(f'Geolocate for {role}...')
+        addresses = dataframe[['adres', postcode]]
+        addresses.columns = ['adres', 'postcode']
+        dataframe[f'{role}_Location'] = geolocate.run(addresses)
 
     return dataframe

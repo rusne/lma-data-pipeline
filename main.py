@@ -5,7 +5,7 @@ import pandas as pd
 
 import filtering
 import clean
-import geolocate
+import prepare_kvk
 # import classify.run
 # import analyze.run
 # import save.run
@@ -30,30 +30,25 @@ if __name__ == '__main__':
     logging.info('LOAD DATASET...')
     try:
         dataframe = pd.read_excel('Testing_data/1_full_dataset.xlsx')
-        # dataframe = pd.read_csv('Private_data/ontvangstmeldingen.csv', low_memory=False)
     except Exception as error:
         logging.critical(error)
         raise
 
     # filter
     logging.info('FILTER DATASET...')
-    filtered_df = filtering.run(dataframe, roles)
+    dataframe = filtering.run(dataframe, roles)
 
     # clean
     logging.info('CLEAN DATASET...')
-    cleaned_df = clean.run(filtered_df, roles)
+    dataframe = clean.run(dataframe, roles)
 
-    # enhance
-    logging.info('GEOLOCATE...')
-    geolocated_df = geolocate.run(cleaned_df, roles)
+    # load KvK dataset
+    logging.info('PREPARE KVK DATASET...')
+    dataframe = prepare_kvk.run(dataframe)
 
     # end pipeline
     logging.info('END PIPELINE...')
 
-    #
-    # # enhance
-    # connected_df = enhance.run(geolocated_df)
-    #
     # # classify
     # classified_df = classify.run(connected_df)
     #
