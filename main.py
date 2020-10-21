@@ -6,8 +6,8 @@ import pandas as pd
 import filtering
 import clean
 import prepare_kvk
+import connect_nace
 # import classify.run
-# import analyze.run
 # import save.run
 
 import warnings  # ignore unnecessary warnings
@@ -34,7 +34,12 @@ if __name__ == '__main__':
         logging.critical(error)
         raise
 
+    # # load KvK dataset
+    # logging.info('PREPARE KVK DATASET...')
+    # dataframe = prepare_kvk.run(dataframe)
+
     # filter
+    dataframe = dataframe[:1]
     logging.info('FILTER DATASET...')
     dataframe = filtering.run(dataframe, roles)
 
@@ -42,18 +47,15 @@ if __name__ == '__main__':
     logging.info('CLEAN DATASET...')
     dataframe = clean.run(dataframe, roles)
 
-    # load KvK dataset
-    logging.info('PREPARE KVK DATASET...')
-    dataframe = prepare_kvk.run(dataframe)
+    # connect nace
+    logging.info('CONNECT NACE...')
+    dataframe = connect_nace.run(dataframe)
 
     # end pipeline
     logging.info('END PIPELINE...')
 
     # # classify
     # classified_df = classify.run(connected_df)
-    #
-    # # analyze (emission)
-    # analyzed_df = analyze.run(classified_df)
-    #
+
     # # save
     # saved_df = save.run(analyzed_df)

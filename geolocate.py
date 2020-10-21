@@ -26,15 +26,15 @@ def geocode(addresses):
 
     # create geodataframe with postcode & location
     geometry = gpd.points_from_xy(addresses.longitude, addresses.latitude)
-    locations = gpd.GeoDataFrame(addresses['postcode'], geometry=geometry)
-    locations = locations.set_crs(epsg=4326, inplace=True)  # specify CRS
+    locations = gpd.GeoDataFrame(addresses, geometry=geometry, crs={'init': 'epsg:4326'})
+    locations = locations.to_crs(epsg=28992)  # specify CRS
 
     return locations
 
 
 def add_wkt(locations):
     # import postcode districts
-    districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_WGS84.shp")
+    districts = gpd.read_file("Spatial_data/Postcodegebied_PC4_RDnew.shp")
     districts = districts[['geometry', 'PC4']]
     districts['centroid'] = districts.geometry.centroid
 

@@ -74,8 +74,9 @@ def run(dataframe, roles):
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
 
     # clean role columns
-    logging.info('Cleaning role columns...')
     for role in roles:
+        logging.info(f'Cleaning {role} columns...')
+
         # list columns for cleaning
         orig_name = f'{role}_Origname'
         straat = f'{role}_Straat'
@@ -108,11 +109,11 @@ def run(dataframe, roles):
         dataframe[plaats] = dataframe[plaats].apply(clean_address)
 
         # prepare address for geolocation
-        dataframe['adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
+        dataframe[f'{role}_Adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
 
         # geolocate
         logging.info(f'Geolocate for {role}...')
-        addresses = dataframe[['adres', postcode]]
+        addresses = dataframe[[f'{role}_Adres', postcode]]
         addresses.columns = ['adres', 'postcode']
         dataframe[f'{role}_Location'] = geolocate.run(addresses)
 
