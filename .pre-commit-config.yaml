@@ -4,6 +4,11 @@
 repos:
   - repo: local
     hooks:
+      - id: black
+        name: black
+        language: system
+        entry: black
+        files: \.py$
       - id: flake8
         name: flake8
         language: system
@@ -13,12 +18,12 @@ repos:
         name: bandit
         language: system
         entry: bandit
-        files: \.py$
+        files: \.disabled$
       - id: mypy
         name: mypy
         language: system
         entry: mypy
-        files: \.py$
+        files: \.disabled$
       - id: pytest
         name: pytest
         language: system

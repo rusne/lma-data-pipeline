@@ -1,6 +1,7 @@
 Private_data/
 Public_data/
 .idea
+.vscode
 venv
 __pycache__
 full.log
