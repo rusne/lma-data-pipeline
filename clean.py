@@ -1,8 +1,8 @@
 # Clean typos
-import numpy as np
 import logging
+import numpy as np
 import geolocate
-
+import variables as var
 
 def clean_description(desc):
     desc = desc.strip()
@@ -67,13 +67,14 @@ def clean_nace(nace):
     return nace
 
 
-def run(dataframe, roles):
+def run(dataframe):
     # clean the BenamingAfval field
     logging.info('Cleaning descriptions...')
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
 
     # clean role columns
+    roles = var.roles
     for role in roles:
         logging.info(f'Cleaning {role} columns...')
 
@@ -112,9 +113,9 @@ def run(dataframe, roles):
         dataframe[f'{role}_Adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
 
         # geolocate
-        logging.info(f'Geolocate for {role}...')
-        addresses = dataframe[[f'{role}_Adres', postcode]]
-        addresses.columns = ['adres', 'postcode']
-        dataframe[f'{role}_Location'] = geolocate.run(addresses)
+        # logging.info(f'Geolocate for {role}...')
+        # addresses = dataframe[[f'{role}_Adres', postcode]]
+        # addresses.columns = ['adres', 'postcode']
+        # dataframe[f'{role}_Location'] = geolocate.run(addresses)
 
     return dataframe

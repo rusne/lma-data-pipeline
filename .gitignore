@@ -3,4 +3,4 @@ Public_data/
 .idea
 venv
 __pycache__
-full.log
+full_logs.log

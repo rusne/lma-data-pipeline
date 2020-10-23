@@ -309,6 +309,3 @@ def run(dataframe):
         output_role['how'] = role
         output_role = output_role.rename(columns={f'{role}_Origname': 'Origname'})
         all_nace = all_nace.append(output_role)
-
-    print(all_nace[['Origname', 'activenq']])
-    print(all_nace['Key'].nunique())
