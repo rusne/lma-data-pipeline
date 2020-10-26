@@ -11,6 +11,14 @@ from geopy.extra.rate_limiter import RateLimiter
 from shapely import wkt
 import logging
 
+# silence geopy logger
+logger = logging.getLogger('geopy')
+logger.propagate = False
+
+# silence fiona logger
+logger = logging.getLogger('fiona')
+logger.propagate = False
+
 
 def geocode(addresses):
     # nominatim geocoding
@@ -51,7 +59,7 @@ def add_wkt(locations):
     # merge locations with districts on postcode
     # preserve original indices from locations
     merge_code = locations.merge(districts, how='left', left_on='PC4_loc', right_on='PC4')
-    merge_code = merge_code.set_axis(locations.index)
+    merge_code.index = locations.index  # keep original index
 
     # check if there is a match on geometry
     # false: no/wrong point from geocoding
@@ -62,20 +70,13 @@ def add_wkt(locations):
     merge_geom.loc[condition, 'geometry'] = merge_code['centroid']
 
     # convert geometry into WKT
-    merge_geom['wkt'] = merge_geom.geometry.apply(lambda x: wkt.dumps(x))
+    # ignore null geometries
+    merge_geom['wkt'] = merge_geom[merge_geom.geometry.notnull()].geometry.apply(lambda x: wkt.dumps(x))
 
     return merge_geom['wkt']
 
 
 def run(addresses):
-    # silence geopy logger
-    logger = logging.getLogger('geopy')
-    logger.propagate = False
-
-    # silence fiona logger
-    logger = logging.getLogger('fiona')
-    logger.propagate = False
-
     # assign locations to addresses
     # geocode with nominatim
     logging.info(f'Start geocoding {len(addresses.index)} addresses...')

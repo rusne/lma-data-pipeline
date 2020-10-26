@@ -3,6 +3,8 @@ import logging
 import numpy as np
 import geolocate
 import variables as var
+import pandas as pd
+import geopandas as gpd
 
 def clean_description(desc):
     desc = desc.strip()
@@ -73,6 +75,23 @@ def run(dataframe):
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
     dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
 
+    # load geolocations
+    geo = pd.read_csv('Private_data/geolocations.csv', low_memory=False)
+
+    geo['straat'] = geo['straat'].astype('str')
+    geo['straat'] = geo['straat'].apply(clean_address)
+
+    geo['huisnr'] = geo['huisnr'].astype('str')
+    geo['huisnr'] = geo['huisnr'].apply(clean_huisnr)
+
+    geo['postcode'] = geo['postcode'].astype('str')
+    geo['postcode'] = geo['postcode'].apply(clean_postcode)
+
+    geo['plaats'] = geo['plaats'].astype('str')
+    geo['plaats'] = geo['plaats'].apply(clean_address)
+
+    geo['adres'] = geo['straat'].str.cat(geo[['huisnr', 'postcode', 'plaats']], sep=' ')
+
     # clean role columns
     roles = var.roles
     for role in roles:
@@ -113,6 +132,14 @@ def run(dataframe):
         dataframe[f'{role}_Adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
 
         # geolocate
+        addresses = pd.merge(dataframe[f'{role}_Adres'], geo, left_on=f'{role}_Adres', right_on='adres')
+        addresses.index = dataframe.index  # keep original index
+        addresses.loc[addresses['x'].isnull(), 'x'] = 0
+        addresses.loc[addresses['y'].isnull(), 'y'] = 0
+        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={'init': 'epsg:28992'})
+        dataframe[f'{role}_Location'] = geolocate.add_wkt(locations)
+
+        # # geolocate
         # logging.info(f'Geolocate for {role}...')
         # addresses = dataframe[[f'{role}_Adres', postcode]]
         # addresses.columns = ['adres', 'postcode']
