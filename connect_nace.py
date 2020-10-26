@@ -291,10 +291,11 @@ def run(dataframe):
                 'Ontvanger': '3820',
                 'Verwerker': '3820'}
 
-    var.map_roles.remove('Ontdoener')
-    var.map_roles.remove('Herkomst')
+    map_roles = var.roles.copy()
+    map_roles.remove('Ontdoener')
+    map_roles.remove('Herkomst')
 
-    for role in var.map_roles:
+    for role in map_roles:
         role_columns = [col for col in dataframe.columns if f'{role}' in col]
         LMA_role = dataframe[role_columns]
         LMA_role['Key'] = LMA_role[f'{role}'].str.cat(LMA_role[[f'{role}_Postcode']], sep=' ')

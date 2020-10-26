@@ -9,44 +9,44 @@ import geopandas as gpd
 def clean_description(desc):
     desc = desc.strip()
     desc = desc.lower()
-    desc = desc.replace(u'\xa0', u' ')
-    desc = ' '.join(desc.split())
-    if desc == 'nan':
+    desc = desc.replace(u"\xa0", u" ")
+    desc = " ".join(desc.split())
+    if desc == "nan":
         return np.NaN
     return desc
 
 
 def clean_postcode(postcode):
     postcode = postcode.strip()
-    postcode = postcode.replace(' ','')
+    postcode = postcode.replace(" ","")
     postcode = postcode.upper()
-    if '0000' in postcode:
-        return ''
+    if "0000" in postcode:
+        return ""
     return postcode
 
 
 def clean_company_name(name):
     # remove all non-ASCII characters
     orig_name = name
-    printable = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r\x0b\x0c'
+    printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r\x0b\x0c"
     name = "".join(filter(lambda x: x in printable, name))
 
     name = name.upper()
 
-    litter = [' SV', 'S V', 'S.V.', ' BV', 'B V', 'B.V.', ' CV', 'C.V.',
-              ' NV', 'N.V.', 'V.O.F', ' VOF', 'V O F', '\'T', '\'S']
+    litter = [" SV", "S V", "S.V.", " BV", "B V", "B.V.", " CV", "C.V.",
+              " NV", "N.V.", "V.O.F", " VOF", "V O F", "\"T", "\"S"]
     # remove all the littering characters
     for l in litter:
-        name = name.replace(l, '')
+        name = name.replace(l, "")
 
-    name = ' '.join(name.split())
+    name = " ".join(name.split())
 
     # check if company name does not contain only digits
     name_copy = name
-    for dig in '0123456789':
-        name_copy = name_copy.replace(dig, '')
+    for dig in "0123456789":
+        name_copy = name_copy.replace(dig, "")
     if len(name_copy) == 0:
-        name = ''
+        name = ""
 
     return name
 
@@ -54,95 +54,95 @@ def clean_company_name(name):
 def clean_address(address):
     address = address.strip()
     address = address.upper()
-    address = ' '.join(address.split())
+    address = " ".join(address.split())
     return address
 
 
 def clean_huisnr(nr):
-    nr = nr.split('.')[0]
-    nr = ''.join(filter(lambda x: x in '0123456789', nr))
+    nr = nr.split(".")[0]
+    nr = "".join(filter(lambda x: x in "0123456789", nr))
     return nr
 
 
 def clean_nace(nace):
-    nace = ''.join(filter(lambda x: x in '0123456789', nace))
+    nace = "".join(filter(lambda x: x in "0123456789", nace))
     return nace
 
 
 def run(dataframe):
     # clean the BenamingAfval field
-    logging.info('Cleaning descriptions...')
-    dataframe['BenamingAfval'] = dataframe['BenamingAfval'].astype('unicode')
-    dataframe['BenamingAfval'] = dataframe['BenamingAfval'].apply(clean_description)
+    logging.info("Cleaning descriptions...")
+    dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
+    dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
     # load geolocations
-    geo = pd.read_csv('Private_data/geolocations.csv', low_memory=False)
+    geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)
 
-    geo['straat'] = geo['straat'].astype('str')
-    geo['straat'] = geo['straat'].apply(clean_address)
+    geo["straat"] = geo["straat"].astype("str")
+    geo["straat"] = geo["straat"].apply(clean_address)
 
-    geo['huisnr'] = geo['huisnr'].astype('str')
-    geo['huisnr'] = geo['huisnr'].apply(clean_huisnr)
+    geo["huisnr"] = geo["huisnr"].astype("str")
+    geo["huisnr"] = geo["huisnr"].apply(clean_huisnr)
 
-    geo['postcode'] = geo['postcode'].astype('str')
-    geo['postcode'] = geo['postcode'].apply(clean_postcode)
+    geo["postcode"] = geo["postcode"].astype("str")
+    geo["postcode"] = geo["postcode"].apply(clean_postcode)
 
-    geo['plaats'] = geo['plaats'].astype('str')
-    geo['plaats'] = geo['plaats'].apply(clean_address)
+    geo["plaats"] = geo["plaats"].astype("str")
+    geo["plaats"] = geo["plaats"].apply(clean_address)
 
-    geo['adres'] = geo['straat'].str.cat(geo[['huisnr', 'postcode', 'plaats']], sep=' ')
+    geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode", "plaats"]], sep=" ")
 
     # clean role columns
     roles = var.roles
     for role in roles:
-        logging.info(f'Cleaning {role} columns...')
+        logging.info(f"Cleaning {role} columns...")
 
         # list columns for cleaning
-        orig_name = f'{role}_Origname'
-        straat = f'{role}_Straat'
-        huisnr = f'{role}_Huisnr'
-        postcode = f'{role}_Postcode'
-        plaats = f'{role}_Plaats'
+        orig_name = f"{role}_Origname"
+        straat = f"{role}_Straat"
+        huisnr = f"{role}_Huisnr"
+        postcode = f"{role}_Postcode"
+        plaats = f"{role}_Plaats"
 
         # clean company name
         # note: Herkomst does not have name!
-        if role != 'Herkomst':
+        if role != "Herkomst":
             # preserve the original name
             dataframe[orig_name] = dataframe[role].copy()
-            dataframe[role] = dataframe[role].astype('str')
+            dataframe[role] = dataframe[role].astype("str")
             dataframe[role] = dataframe[role].apply(clean_company_name)
 
         # clean street name
-        dataframe[straat] = dataframe[straat].astype('str')
+        dataframe[straat] = dataframe[straat].astype("str")
         dataframe[straat] = dataframe[straat].apply(clean_address)
 
         # clean house number
-        dataframe[huisnr] = dataframe[huisnr].astype('str')
+        dataframe[huisnr] = dataframe[huisnr].astype("str")
         dataframe[huisnr] = dataframe[huisnr].apply(clean_huisnr)
 
         # clean postcode
-        dataframe[postcode] = dataframe[postcode].astype('str')
+        dataframe[postcode] = dataframe[postcode].astype("str")
         dataframe[postcode] = dataframe[postcode].apply(clean_postcode)
 
         # clean city name
-        dataframe[plaats] = dataframe[plaats].astype('str')
+        dataframe[plaats] = dataframe[plaats].astype("str")
         dataframe[plaats] = dataframe[plaats].apply(clean_address)
 
         # prepare address for geolocation
-        dataframe[f'{role}_Adres'] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=' ')
+        dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=" ")
 
         # geolocate
-        addresses = pd.merge(dataframe[f'{role}_Adres'], geo, left_on=f'{role}_Adres', right_on='adres')
+        addresses = pd.merge(dataframe[f"{role}_Adres"], geo, left_on=f"{role}_Adres", right_on="adres")
         addresses.index = dataframe.index  # keep original index
-        addresses.loc[addresses['x'].isnull(), 'x'] = 0
-        addresses.loc[addresses['y'].isnull(), 'y'] = 0
-        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={'init': 'epsg:28992'})
-        dataframe[f'{role}_Location'] = geolocate.add_wkt(locations)
+        addresses.loc[addresses["x"].isnull(), "x"] = 0
+        addresses.loc[addresses["y"].isnull(), "y"] = 0
+        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init": "epsg:28992"})
+        dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
 
         # # geolocate
-        # logging.info(f'Geolocate for {role}...')
-        # addresses = dataframe[[f'{role}_Adres', postcode]]
-        # addresses.columns = ['adres', 'postcode']
-        # dataframe[f'{role}_Location'] = geolocate.run(addresses)
+        # logging.info(f"Geolocate for {role}...")
+        # addresses = dataframe[[f"{role}_Adres", postcode]]
+        # addresses.columns = ["adres", "postcode"]
+        # dataframe[f"{role}_Location"] = geolocate.run(addresses)
 
     return dataframe
