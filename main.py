@@ -26,8 +26,8 @@ if __name__ == "__main__":
     # TEST DATAFRAME
     logging.info("LOAD DATASET...")
     try:
-        dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
+        # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
+        dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
     except Exception as error:
         logging.critical(error)
         raise
