@@ -10,7 +10,6 @@ import geopandas as gpd
 from shapely import wkt
 import variables as var
 from fuzzywuzzy import fuzz
-import numpy as np
 
 import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -86,6 +85,7 @@ def run(dataframe):
     LMA_inbound.drop(columns=['route'])
 
     total_inbound = LMA_inbound['Key'].nunique()
+    logging.info(f'Unique ontdoeners for matching: {total_inbound}')
     control_columns = ['Key', 'Origname', 'Adres', 'orig_zaaknaam', 'adres', 'activenq', 'AG']
 
     # ______________________________________________________________________________
@@ -215,10 +215,11 @@ def run(dataframe):
 
     distances['dist'] = distances['wkt'].distance(distances['Location'])
 
-    text_dist = [fuzz.ratio(x, y) for x, y in zip(distances['orig_zaaknaam'], distances['Origname'])]
-    distances['text_dist'] = pd.Series(text_dist, index=distances.index)
+    fuzz_ratio = [fuzz.ratio(x, y) for x, y in zip(distances['orig_zaaknaam'], distances['Origname'])]
+    distances['text_dist'] = pd.Series(fuzz_ratio, index=distances.index)
+    fuzz_ratio.clear()
 
-    distances.reset_index(inplace=True)
+    # distances.reset_index(inplace=True)
     text_distances = distances[distances['text_dist'] >= 50]
     matched_text = text_distances.loc[text_distances.groupby(['Key'])['text_dist'].idxmax()]
 
@@ -239,83 +240,82 @@ def run(dataframe):
     # take out those actors that had not been matched
     remaining = remaining[(remaining['Key'].isin(output_by_text_proximity['Key']) == False)]
 
-    # # ______________________________________________________________________________
-    # # 5. BY GEO PROXIMITY
-    # # ______________________________________________________________________________
-    #
-    # remaining_dist = pd.merge(remaining[['Key']], distances, on='Key')
-    #
-    # matched_by_geo_proximity = remaining_dist.loc[remaining_dist.groupby(['Key'])['dist'].idxmin()]
-    #
-    # # matching control output
-    # control_output_5 = matched_by_geo_proximity[['Key', 'Ontdoener_Origname', 'Ontdoener_Adres', 'orig_zaaknaam', 'adres', 'activenq', 'AG']]
-    # control_output_5['match'] = 5
-    # control_output = control_output.append(control_output_5)
-    #
-    # matched_by_geo_proximity = matched_by_geo_proximity[['Key', 'activenq', 'Ontdoener_Origname']].drop_duplicates(subset=['Key'])
-    #
-    # # OUTPUT BY PROXIMITY
-    # output_by_geo_proximity = matched_by_geo_proximity.copy()
-    # output_by_geo_proximity['how'] = 'by geo proximity'
-    #
-    # perc = round(len(output_by_geo_proximity.index) / float(total_inbound) * 100, 2)
-    # logging.info(f'{len(output_by_geo_proximity.index)} Ontdoeners matched by proximity ({perc}%)')
-    #
-    # # take out those actors that had not been matched
-    # remaining = remaining[(remaining['Key'].isin(output_by_geo_proximity['Key']) == False)]
-    #
-    # # ______________________________________________________________________________
-    # # 5. UNMATCHED
-    # #    not matched with anything, gets a dummy NACE code
-    # #    points outside the LISA boundary also get a dummy code
-    # # ______________________________________________________________________________
-    #
-    # remaining['activenq'] = '0000'
-    # out_boundary['activenq'] = '0001'
-    # route['activenq'] = '0002'
-    #
-    # output_unmatched = pd.concat([remaining[['Key', 'activenq', 'Ontdoener_Origname']], out_boundary[['Key', 'activenq', 'Ontdoener_Origname']], route[['Key', 'activenq', 'Ontdoener_Origname']]])
-    # output_unmatched.drop_duplicates(subset=['Key'], inplace=True)
-    # output_unmatched['how'] = 'unmatched'
-    #
-    # perc = round(len(output_unmatched.index) / float(total_inbound) * 100, 2)
-    # logging.info(f'{len(output_unmatched.index)} Ontdoeners unmatched ({perc}%)')
-    #
-    # all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
-    #                      output_by_text_proximity, output_by_geo_proximity, output_unmatched])
-    # all_nace = all_nace.rename(columns={'Ontdoener_Origname': 'Origname'})
-    #
-    # # ______________________________________________________________________________
-    # # ______________________________________________________________________________
-    #
-    # # G I V I N G   N A C E   T O   A L L   O T H E R   R O L E S
-    # # ______________________________________________________________________________
-    # # ______________________________________________________________________________
-    #
-    # role_map = {'Ontdoener': '0000',
-    #             'Afzender': '3810',
-    #             'Inzamelaar': '3810',
-    #             'Bemiddelaar': '3810',
-    #             'Handelaar': '3810',
-    #             'Ontvanger': '3820',
-    #             'Verwerker': '3820'}
-    #
-    # map_roles = var.roles.copy()
-    # map_roles.remove('Ontdoener')
-    # map_roles.remove('Herkomst')
-    #
-    # for role in map_roles:
-    #     role_columns = [col for col in dataframe.columns if f'{role}' in col]
-    #     LMA_role = dataframe[role_columns]
-    #     LMA_role['Key'] = LMA_role[f'{role}'].str.cat(LMA_role[[f'{role}_Postcode']], sep=' ')
-    #
-    #     keys = LMA_role[['Key', f'{role}_Origname']].copy()
-    #     keys.drop_duplicates(subset=['Key'], inplace=True)
-    #     logging.info(f'{len(keys)} {role}s have been found')
-    #
-    #     keys['activenq'] = role_map[role]
-    #
-    #     output_role = keys.copy()
-    #     output_role['how'] = role
-    #     output_role = output_role.rename(columns={f'{role}_Origname': 'Origname'})
-    #     all_nace = all_nace.append(output_role)
+    # ______________________________________________________________________________
+    # 5. BY GEO PROXIMITY
+    # ______________________________________________________________________________
+
+    remaining.drop_duplicates(subset=['Key'], inplace=True)
+
+    distances = distances[distances.index.isin(remaining.index)]
+    original_index = distances.drop_duplicates(subset=['Key']).index
+    distances.reset_index(inplace=True)
+
+    closest = distances.groupby(['Key'])['dist'].idxmin()
+    matched_by_geo_proximity = pd.merge(remaining[['Key']], distances.loc[closest], on='Key')
+    matched_by_geo_proximity.index = original_index
+
+    # matching control output
+    control_output_5 = matched_by_geo_proximity[control_columns]
+    control_output_5['match'] = 5
+    control_output = control_output.append(control_output_5)
+
+    matched_by_geo_proximity = matched_by_geo_proximity[['Key', 'Origname', 'activenq']].drop_duplicates(subset=['Key'])
+
+    # OUTPUT BY PROXIMITY
+    output_by_geo_proximity = matched_by_geo_proximity.copy()
+    output_by_geo_proximity['how'] = 'by geo proximity'
+
+    perc = round(len(output_by_geo_proximity.index) / float(total_inbound) * 100, 2)
+    logging.info(f'{len(output_by_geo_proximity.index)} ontdoeners matched by proximity ({perc}%)')
+
+    # take out those actors that had not been matched
+    remaining = remaining[(remaining['Key'].isin(output_by_geo_proximity['Key']) == False)]
+
+    # ______________________________________________________________________________
+    # 5. UNMATCHED
+    #    not matched with anything, gets a dummy NACE code
+    #    points outside the LISA boundary also get a dummy code
+    # ______________________________________________________________________________
+
+    remaining['activenq'] = '0000'
+    out_boundary['activenq'] = '0001'
+    route['activenq'] = '0002'
+
+    output_unmatched = pd.concat([remaining[['Key', 'Origname', 'activenq']], out_boundary[['Key', 'Origname', 'activenq']], route[['Key', 'Origname', 'activenq']]])
+    output_unmatched.drop_duplicates(subset=['Key'], inplace=True)
+    output_unmatched['how'] = 'unmatched'
+
+    perc = round(len(output_unmatched.index) / float(total_inbound) * 100, 2)
+    logging.info(f'{len(output_unmatched.index)} ontdoeners unmatched ({perc}%)')
+
+    all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
+                         output_by_text_proximity, output_by_geo_proximity, output_unmatched])
+    all_nace.drop_duplicates(subset=['Key'], inplace=True)
+
+    original_index = ontdoeners.index
+    ontdoeners = pd.merge(ontdoeners, all_nace, on='Key')
+    ontdoeners.index = original_index
+    dataframe['Ontdoener_activenq'] = ontdoeners['activenq']
+
+    # ______________________________________________________________________________
+    # ______________________________________________________________________________
+    # G I V I N G   N A C E   T O   A L L   O T H E R   R O L E S
+    # ______________________________________________________________________________
+    # ______________________________________________________________________________
+
+    role_map = {'Ontdoener': '0000',
+                'Afzender': '3810',
+                'Inzamelaar': '3810',
+                'Bemiddelaar': '3810',
+                'Handelaar': '3810',
+                'Ontvanger': '3820',
+                'Verwerker': '3820'}
+
+    map_roles = var.roles.copy()
+    map_roles.remove('Ontdoener')
+    map_roles.remove('Herkomst')
+
+    for role in map_roles:
+        dataframe[f'{role}_activenq'] = role_map[f'{role}']
+
+    return dataframe
