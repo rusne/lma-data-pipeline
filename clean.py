@@ -132,7 +132,8 @@ def run(dataframe):
         dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=" ")
 
         # geolocate
-        addresses = pd.merge(dataframe[f"{role}_Adres"], geo, left_on=f"{role}_Adres", right_on="adres")
+        addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
+
         addresses.index = dataframe.index  # keep original index
         addresses.loc[addresses["x"].isnull(), "x"] = 0
         addresses.loc[addresses["y"].isnull(), "y"] = 0
