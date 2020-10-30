@@ -87,6 +87,7 @@ def run(dataframe):
     total_inbound = LMA_inbound["Key"].nunique()
     logging.info(f"Unique ontdoeners for matching: {total_inbound}")
     control_columns = ["Key", "Origname", "Adres", "orig_zaaknaam", "adres", "activenq", "AG"]
+    output_columns = ["Key", "Origname", "AG", "activenq"]
 
     # ______________________________________________________________________________
     # 1. BY NAME AND ADDRESS
@@ -103,7 +104,7 @@ def run(dataframe):
     control_output["match"] = 1
 
     # OUTPUT BY NAME AND ADDRESS
-    output_by_name_address = by_name_and_address[["Key", "Origname", "activenq"]].copy()
+    output_by_name_address = by_name_and_address[output_columns].copy()
     output_by_name_address["how"] = "by name and address"
 
     perc = round(len(output_by_name_address.index) / float(total_inbound) * 100, 2)
@@ -131,7 +132,7 @@ def run(dataframe):
     control_output = control_output.append(control_output_2)
 
     # OUTPUT BY NAME
-    output_by_name = closest[["Key", "Origname", "activenq"]].copy()
+    output_by_name = closest[output_columns].copy()
     output_by_name["how"] = "by name"
 
     perc = round(len(output_by_name.index) / float(total_inbound) * 100, 2)
@@ -182,11 +183,11 @@ def run(dataframe):
     control_output_3["match"] = 3
     control_output = control_output.append(control_output_3)
 
-    by_address = by_address[["Key", "Origname", "activenq"]]
+    by_address = by_address[output_columns]
     by_address.drop_duplicates(subset=["Key"], inplace=True)
 
     # OUTPUT BY ADDRESS
-    output_by_address = by_address[["Key", "Origname", "activenq"]]
+    output_by_address = by_address[output_columns]
     output_by_address["how"] = "by address"
 
     perc = round(len(output_by_address.index) / float(total_inbound) * 100, 2)
@@ -228,7 +229,7 @@ def run(dataframe):
     control_output_4["match"] = 4
     control_output = control_output.append(control_output_4)
 
-    matched_by_text_proximity = matched_text[["Key", "Origname", "activenq"]].drop_duplicates(subset=["Key"])
+    matched_by_text_proximity = matched_text[output_columns].drop_duplicates(subset=["Key"])
 
     # OUTPUT BY TEXT PROXIMITY
     output_by_text_proximity = matched_by_text_proximity.copy()
@@ -259,7 +260,7 @@ def run(dataframe):
     control_output_5["match"] = 5
     control_output = control_output.append(control_output_5)
 
-    matched_by_geo_proximity = matched_by_geo_proximity[["Key", "Origname", "activenq"]].drop_duplicates(subset=["Key"])
+    matched_by_geo_proximity = matched_by_geo_proximity[output_columns].drop_duplicates(subset=["Key"])
 
     # OUTPUT BY PROXIMITY
     output_by_geo_proximity = matched_by_geo_proximity.copy()
@@ -277,11 +278,11 @@ def run(dataframe):
     #    points outside the LISA boundary also get a dummy code
     # ______________________________________________________________________________
 
-    remaining["activenq"] = "0000"
-    out_boundary["activenq"] = "0001"
-    route["activenq"] = "0002"
+    remaining[["AG", "activenq"]] = ["W", "0000"]
+    out_boundary[["AG", "activenq"]] = ["W", "0001"]
+    route[["AG", "activenq"]] = ["W", "0002"]
 
-    output_unmatched = pd.concat([remaining[["Key", "Origname", "activenq"]], out_boundary[["Key", "Origname", "activenq"]], route[["Key", "Origname", "activenq"]]])
+    output_unmatched = pd.concat([remaining[output_columns], out_boundary[output_columns], route[output_columns]])
     output_unmatched.drop_duplicates(subset=["Key"], inplace=True)
     output_unmatched["how"] = "unmatched"
 
@@ -294,7 +295,32 @@ def run(dataframe):
     original_index = ontdoeners.index
     ontdoeners = pd.merge(ontdoeners, all_nace, how="left", on="Key")
     ontdoeners.index = original_index
-    dataframe["Ontdoener_activenq"] = ontdoeners["activenq"]
+    dataframe["Ontdoener_NACE"] = ontdoeners["AG"].str.cat(ontdoeners["activenq"].astype(str).str[:4], sep="-")
+
+    nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
+    nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
+    nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
+    nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
+    nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
+    nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
+    nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
+    nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
+    nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
+
+    flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
+    flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
+    flows.columns = ['NACE', 'EWC_code']
+
+    flows_1 = flows
+    indices = flows_1.index
+    flows_1['NACE'] = flows_1['NACE'].str[:1]
+    nace_ewc_1 = nace_ewc[nace_ewc['level'] == 1]
+    nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:1]
+    nace_ewc_1.drop_duplicates(inplace=True)
+    match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE', 'EWC_code'])
+    match.index = indices
+    match = match[match['level'].notnull()]
+    print(match)
 
     # ______________________________________________________________________________
     # ______________________________________________________________________________

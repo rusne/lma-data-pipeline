@@ -45,8 +45,6 @@ if __name__ == "__main__":
     logging.info("CONNECT NACE...")
     dataframe = connect_nace.run(dataframe)
 
-    print(dataframe[['Ontdoener_activenq', 'EuralCode']])
-
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")
     # dataframe = prepare_kvk.run(dataframe)
