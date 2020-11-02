@@ -22,6 +22,11 @@ output_columns = ["Key", "Origname", "AG", "activenq"]
 
 
 def match_by_name_and_address(LMA_inbound):
+    """
+    Match ontdoeners with KvK dataset by name & address
+    :param LMA_inbound:
+    :return:
+    """
     LMA_inbound1 = LMA_inbound[["Key", "Origname", "Adres"]].copy()
     LMA_inbound1.drop_duplicates(subset=["Key"], inplace=True)
 
@@ -40,6 +45,11 @@ def match_by_name_and_address(LMA_inbound):
 
 
 def match_by_name(remaining):
+    """
+    Match ontdoeners with KvK dataset only by name
+    :param remaining:
+    :return:
+    """
     LMA_inbound2 = remaining[["Key", "Name", "Origname", "Adres", "Location"]].copy()
     LMA_inbound2.drop_duplicates(subset=["Key"], inplace=True)
 
@@ -62,6 +72,11 @@ def match_by_name(remaining):
 
 
 def match_by_address(remaining):
+    """
+    Match ontdoeners with KvK dataset only by address
+    :param remaining:
+    :return:
+    """
     LMA_inbound3 = remaining[["Key", "Origname", "Adres", "Postcode"]].copy()
     LMA_inbound3.drop_duplicates(subset=["Key"], inplace=True)
 
@@ -112,6 +127,11 @@ def match_by_address(remaining):
 
 
 def match_by_text_proximity(remaining):
+    """
+    Match ontdoeners with KvK dataset by name similarity & closest distance
+    :param remaining:
+    :return:
+    """
     KvK_actors["wkt"] = KvK_actors["wkt"].apply(wkt.loads)
     KvK_actors_geo = gpd.GeoDataFrame(KvK_actors[["key", "orig_zaaknaam", "adres", "activenq", "AG", "wkt"]],
                                       geometry="wkt", crs={"init": "epsg:28992"})
@@ -152,6 +172,12 @@ def match_by_text_proximity(remaining):
 
 
 def match_by_geo_proximity(remaining, distances):
+    """
+    Match ontdoeners with KvK dataset only by closest distance
+    :param remaining:
+    :param distances:
+    :return:
+    """
     remaining.drop_duplicates(subset=["Key"], inplace=True)
 
     distances = distances[distances.index.isin(remaining.index)]
@@ -337,6 +363,7 @@ def run(dataframe):
 
     all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
                          output_by_text_proximity, output_by_geo_proximity, output_unmatched])
+    all_nace.drop_duplicates(subset=["Key"], inplace=True)
 
     original_index = ontdoeners.index
     ontdoeners = pd.merge(ontdoeners, all_nace, how="left", on="Key")
@@ -346,31 +373,31 @@ def run(dataframe):
     # # ------------------------------------------------------------------------------
     # # NACE - EWC VALIDATION
     # # ------------------------------------------------------------------------------
-    #
-    # nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
-    # nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
-    # nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
-    # nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
-    # nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
-    # nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
-    # nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
-    # nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
-    # nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
-    #
-    # flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
-    # flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
-    # flows.columns = ['NACE', 'EWC_code']
-    #
-    # flows_1 = flows
-    # indices = flows_1.index
-    # flows_1['NACE'] = flows_1['NACE'].str[:6]
-    # nace_ewc_1 = nace_ewc[nace_ewc['level'] == 4]
-    # nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:6]
-    # nace_ewc_1.drop_duplicates(inplace=True)
-    # match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE', 'EWC_code'])
+
+    nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
+    nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
+    nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
+    nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
+    nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
+    nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
+    nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
+    nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
+    nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
+
+    flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
+    flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
+    flows.columns = ['NACE', 'EWC_code']
+
+    flows_1 = flows
+    indices = flows_1.index
+    flows_1['NACE'] = flows_1['NACE'].str[:1]
+    nace_ewc_1 = nace_ewc[nace_ewc['level'] == 1]
+    nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:1]
+    nace_ewc_1.drop_duplicates(inplace=True)
+    match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE'])
     # match.index = indices
-    # match = match[match['level'].notnull()]
-    # print(match)
+    match = match[match['level'].isnull()].drop_duplicates(subset=['NACE'])
+    print(match)
 
     # ______________________________________________________________________________
     # ______________________________________________________________________________
@@ -378,19 +405,12 @@ def run(dataframe):
     # ______________________________________________________________________________
     # ______________________________________________________________________________
 
-    role_map = {"Ontdoener": "0000",
-                "Afzender": "3810",
-                "Inzamelaar": "3810",
-                "Bemiddelaar": "3810",
-                "Handelaar": "3810",
-                "Ontvanger": "3820",
-                "Verwerker": "3820"}
-
     map_roles = var.roles.copy()
     map_roles.remove("Ontdoener")
-    map_roles.remove("Herkomst")
+    dummy_nace = var.dummy_nace.copy()
 
     for role in map_roles:
-        dataframe[f"{role}_activenq"] = role_map[f"{role}"]
+        if f"{role}" in dummy_nace.keys():
+            dataframe[f"{role}_activenq"] = dummy_nace[f"{role}"]
 
     return dataframe

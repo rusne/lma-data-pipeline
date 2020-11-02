@@ -112,9 +112,10 @@ def run(dataframe):
     :return: dataframe with formatted role info & geolocation
     """
     # clean the BenamingAfval column (waste descriptions)
-    logging.info("Cleaning descriptions (BenamingAfval) ...")
-    dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
-    dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
+    if "BenamingAfval" in dataframe.columns:
+        logging.info("Cleaning descriptions (BenamingAfval) ...")
+        dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
+        dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
     # load geolocations (TO BE REMOVED IN THE FINAL VERSION)
     geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)

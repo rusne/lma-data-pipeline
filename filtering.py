@@ -15,8 +15,9 @@ def run(dataframe):
     :return: the filtered dataset
     """
 
-    # selection of the columns we want to include in our analysis
-    LMA_columns = var.LMA_columns
+    # selection of the columns and roles we want to include in our analysis
+    LMA_columns = var.LMA_columns.copy()
+    roles = var.roles.copy()
 
     # filter the requested columns from the original dataframe
     try:
@@ -30,17 +31,17 @@ def run(dataframe):
     original_length = len(LMA.index)
 
     # if "Herkomst" has all columns empty, copy from "Ontdoener"
-    Herkomst_columns = [col for col in LMA.columns if "Herkomst" in col]
-    all_null = [LMA[col].isnull() for col in Herkomst_columns]
-    idx = LMA[np.bitwise_and.reduce(all_null)].index
-    for col in Herkomst_columns:
-        orig_col = "Ontdoener_" + col.split("_")[-1]
-        LMA.loc[idx, col] = LMA[orig_col]
+    if any('Herkomst' in col for col in dataframe.columns):
+        Herkomst_columns = [col for col in LMA.columns if "Herkomst" in col]
+        all_null = [LMA[col].isnull() for col in Herkomst_columns]
+        idx = LMA[np.bitwise_and.reduce(all_null)].index
+        for col in Herkomst_columns:
+            orig_col = "Ontdoener_" + col.split("_")[-1]
+            LMA.loc[idx, col] = LMA[orig_col]
 
     # filter empty fields
     # log all empty fields before removing them
     # empty role columns
-    roles = var.roles
     for role in roles:
         # empty company name
         # note: Herkomst does not have company name!
