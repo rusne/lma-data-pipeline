@@ -4,9 +4,9 @@ import pandas as pd
 import filtering
 import clean
 import connect_nace
-# import prepare_kvk
 # import classify.run
 # import save.run
+# import prepare_kvk
 
 import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -45,10 +45,6 @@ if __name__ == "__main__":
     logging.info("CONNECT NACE...")
     dataframe = connect_nace.run(dataframe)
 
-    # # load KvK dataset
-    # logging.info("PREPARE KVK DATASET...")
-    # dataframe = prepare_kvk.run(dataframe)
-
     # # classify
     # classified_df = classify.run(connected_df)
 
@@ -57,3 +53,8 @@ if __name__ == "__main__":
 
     # end pipeline
     logging.info("END PIPELINE...")
+
+    # # load KvK dataset
+    # logging.info("PREPARE KVK DATASET...")
+    # dataframe = prepare_kvk.run(dataframe)
+

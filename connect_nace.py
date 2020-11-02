@@ -1,8 +1,8 @@
-# Find the right economic activity of a company --> now works on
-# Match company with KvK data (by name and location)
-# Validate NACE with EWC code
-# Recognize waste management companies
-# process KvK dataset (cache things like geolocation, and update with new data)
+"""
+This module:
+1) Match company with KvK data to assign NACE codes
+2) Validate NACE with EWC code
+"""
 
 import logging
 import pandas as pd
@@ -15,91 +15,20 @@ import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 pd.options.mode.chained_assignment = None
 
+KvK_actors = None
+control_output = None
+control_columns = ["Key", "Origname", "Adres", "orig_zaaknaam", "adres", "activenq", "AG"]
+output_columns = ["Key", "Origname", "AG", "activenq"]
 
-def run(dataframe):
-    # extract ontdoeners from LMA dataset to connect nace
-    logging.info("Extract ontdoeners...")
-    ontdoener_columns = [col for col in dataframe.columns if "Ontdoener" in col]
-    ontdoeners = dataframe[ontdoener_columns]
-    ontdoeners.columns = [col.split("_")[-1] for col in ontdoener_columns]
-    ontdoeners = ontdoeners.rename(columns={"Ontdoener": "Name"})
-    logging.info(f"Original ontdoeners: {len(ontdoeners.index)}")
 
-    # prepare key to match with KvK dataset (clean name + postcode)
-    ontdoeners["Key"] = ontdoeners["Name"].str.cat(ontdoeners[["Postcode"]], sep=" ")
-
-    # import KvK dataset with NACE codes
-    logging.info("Import KvK dataset with geolocation...")
-    try:
-        # KvK_actors = pd.read_excel("Private_data/KvK_data/raw_data/all_LISA_part2.xlsx")
-        KvK_actors = pd.read_csv("Private_data/KvK_data/raw_data/all_LISA_part2.csv", low_memory=False)
-    except Exception as error:
-        logging.critical(error)
-        raise
-
-    # load casestudy boundary
-    logging.info("Import casestudy boundary...")
-    try:
-        MRA_boundary = gpd.read_file("Spatial_data/Metropoolregio_RDnew.shp")
-    except Exception as error:
-        logging.critical(error)
-        raise
-
-    # first ontdoeners need to be matched with their own locations
-    # taking out route actors first
-    ontdoeners.loc[ontdoeners["Key"].str.contains("route"), "route"] = "J"
-    ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"].apply(lambda x: str(x).strip(" route"))
-
-    # remove any ontdoeners with no location
-    missing_locations = ontdoeners[ontdoeners["Location"].isnull()]
-    if len(missing_locations.index):
-        logging.warning(f"Remove {len(missing_locations.index)} ontdoeners with missing locations...")
-        ontdoeners.dropna(subset=["Location"], inplace=True)
-
-    # after filtering missing locations, add route info again
-    ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"] + " route"
-    # logging.info(f"{ontdoeners["key"].nunique()} ontdoeners to connect NACE...")
-
-    # convert WKT to geometry
-    ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
-    LMAgdf = gpd.GeoDataFrame(ontdoeners, geometry="Location", crs={"init": "epsg:28992"})
-
-    # check which ontdoeners are within the casestudy area
-    joined = gpd.sjoin(LMAgdf, MRA_boundary, how="left", op="within")
-    in_boundary = joined[joined["OBJECTID"].isna() == False]
-    out_boundary = joined[joined["OBJECTID"].isna()]
-
-    # logging.info(f"{in_boundary["key"].nunique()} ontdoeners are inside the casestudy area")
-    if len(out_boundary.index):
-        logging.info(f"Remove {out_boundary['Key'].nunique()} ontdoeners outside the casestudy area")
-
-    # further matching only happens for the actors inside the boundary
-    LMA_inbound = in_boundary[ontdoeners.columns]
-
-    # route inzameling gets a separate nace code as well
-    route = LMA_inbound[LMA_inbound["route"] == "J"]
-    if len(route.index):
-        logging.info(f"Remove {route['Key'].nunique()} ontdoeners belonging to route inzameling")
-
-    LMA_inbound = LMA_inbound[LMA_inbound["route"] != "J"]
-    LMA_inbound.drop(columns=["route"])
-
-    total_inbound = LMA_inbound["Key"].nunique()
-    logging.info(f"Unique ontdoeners for matching: {total_inbound}")
-    control_columns = ["Key", "Origname", "Adres", "orig_zaaknaam", "adres", "activenq", "AG"]
-    output_columns = ["Key", "Origname", "AG", "activenq"]
-
-    # ______________________________________________________________________________
-    # 1. BY NAME AND ADDRESS
-    #    both name and address are the same
-    # ______________________________________________________________________________
-
+def match_by_name_and_address(LMA_inbound):
     LMA_inbound1 = LMA_inbound[["Key", "Origname", "Adres"]].copy()
     LMA_inbound1.drop_duplicates(subset=["Key"], inplace=True)
 
     by_name_and_address = pd.merge(LMA_inbound1, KvK_actors, left_on="Key", right_on="key")
 
     # matching control output
+    global control_output
     control_output = by_name_and_address[control_columns]
     control_output["match"] = 1
 
@@ -107,17 +36,10 @@ def run(dataframe):
     output_by_name_address = by_name_and_address[output_columns].copy()
     output_by_name_address["how"] = "by name and address"
 
-    perc = round(len(output_by_name_address.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_by_name_address.index)} ontdoeners matched by name & postcode ({perc}%)")
+    return output_by_name_address
 
-    # take out those ontdoeners that had not been matched
-    remaining = LMA_inbound[(LMA_inbound["Key"].isin(output_by_name_address["Key"]) == False)]
 
-    # ______________________________________________________________________________
-    # 2. BY NAME ONLY
-    #    geographically closer one gets a priority
-    # ______________________________________________________________________________
-
+def match_by_name(remaining):
     LMA_inbound2 = remaining[["Key", "Name", "Origname", "Adres", "Location"]].copy()
     LMA_inbound2.drop_duplicates(subset=["Key"], inplace=True)
 
@@ -129,22 +51,17 @@ def run(dataframe):
     # matching control output
     control_output_2 = closest[control_columns]
     control_output_2["match"] = 2
+    global control_output
     control_output = control_output.append(control_output_2)
 
     # OUTPUT BY NAME
     output_by_name = closest[output_columns].copy()
     output_by_name["how"] = "by name"
 
-    perc = round(len(output_by_name.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_by_name.index)} ontdoeners matched only by name ({perc}%)")
+    return output_by_name
 
-    # take out those Ontdoeners that had not been matched
-    remaining = remaining[(remaining["Key"].isin(output_by_name["Key"]) == False)]
 
-    # ______________________________________________________________________________
-    # 3. BY ADDRESS ONLY
-    # ______________________________________________________________________________
-
+def match_by_address(remaining):
     LMA_inbound3 = remaining[["Key", "Origname", "Adres", "Postcode"]].copy()
     LMA_inbound3.drop_duplicates(subset=["Key"], inplace=True)
 
@@ -181,6 +98,7 @@ def run(dataframe):
     # matching control output
     control_output_3 = by_address[control_columns]
     control_output_3["match"] = 3
+    global control_output
     control_output = control_output.append(control_output_3)
 
     by_address = by_address[output_columns]
@@ -190,19 +108,13 @@ def run(dataframe):
     output_by_address = by_address[output_columns]
     output_by_address["how"] = "by address"
 
-    perc = round(len(output_by_address.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_by_address.index)} ontdoeners matched only by address ({perc}%)")
+    return output_by_address
 
-    # take out those actors that had not been matched
-    remaining = remaining[(remaining["Key"].isin(output_by_address["Key"]) == False)]
 
-    # ______________________________________________________________________________
-    # 4. BY  GEO AND TEXT PROXIMITY
-    #    closest name within a certain radius
-    # ______________________________________________________________________________
-
+def match_by_text_proximity(remaining):
     KvK_actors["wkt"] = KvK_actors["wkt"].apply(wkt.loads)
-    KvK_actors_geo = gpd.GeoDataFrame(KvK_actors[["key", "orig_zaaknaam", "adres", "activenq", "AG", "wkt"]], geometry="wkt", crs={"init": "epsg:28992"})
+    KvK_actors_geo = gpd.GeoDataFrame(KvK_actors[["key", "orig_zaaknaam", "adres", "activenq", "AG", "wkt"]],
+                                      geometry="wkt", crs={"init": "epsg:28992"})
 
     LMA_inbound4 = remaining[["Key", "Origname", "Adres", "Location"]]
     LMA_inbound4.drop_duplicates(subset=["Key"], inplace=True)
@@ -227,6 +139,7 @@ def run(dataframe):
     # # matching control output
     control_output_4 = matched_text[control_columns]
     control_output_4["match"] = 4
+    global control_output
     control_output = control_output.append(control_output_4)
 
     matched_by_text_proximity = matched_text[output_columns].drop_duplicates(subset=["Key"])
@@ -235,16 +148,10 @@ def run(dataframe):
     output_by_text_proximity = matched_by_text_proximity.copy()
     output_by_text_proximity["how"] = "by text proximity"
 
-    perc = round(len(output_by_text_proximity.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_by_text_proximity.index)} ontdoeners matched with the closest name match in <{var.buffer_dist}m ({perc}%)")
+    return output_by_text_proximity, distances
 
-    # take out those actors that had not been matched
-    remaining = remaining[(remaining["Key"].isin(output_by_text_proximity["Key"]) == False)]
 
-    # ______________________________________________________________________________
-    # 5. BY GEO PROXIMITY
-    # ______________________________________________________________________________
-
+def match_by_geo_proximity(remaining, distances):
     remaining.drop_duplicates(subset=["Key"], inplace=True)
 
     distances = distances[distances.index.isin(remaining.index)]
@@ -258,6 +165,7 @@ def run(dataframe):
     # matching control output
     control_output_5 = matched_by_geo_proximity[control_columns]
     control_output_5["match"] = 5
+    global control_output
     control_output = control_output.append(control_output_5)
 
     matched_by_geo_proximity = matched_by_geo_proximity[output_columns].drop_duplicates(subset=["Key"])
@@ -266,16 +174,154 @@ def run(dataframe):
     output_by_geo_proximity = matched_by_geo_proximity.copy()
     output_by_geo_proximity["how"] = "by geo proximity"
 
+    return output_by_geo_proximity
+
+
+def run(dataframe):
+    """
+    Connect roles with NACE codes from the KvK dataset
+    :param dataframe:
+    :return: dataframe with NACE codes for each role
+    """
+    # import KvK dataset with NACE codes
+    # NOTE: this dataset is the result of prepare_kvk.py
+    logging.info("Import KvK dataset with geolocation...")
+    try:
+        global KvK_actors
+        # KvK_actors = pd.read_excel("Private_data/KvK_data/raw_data/all_LISA_part2.xlsx")
+        KvK_actors = pd.read_csv("Private_data/KvK_data/raw_data/all_LISA_part2.csv", low_memory=False)
+    except Exception as error:
+        logging.critical(error)
+        raise
+
+    # load casestudy boundary
+    # connect with KvK dataset only ontdoeners within the casestudy boundary
+    logging.info("Import casestudy boundary...")
+    try:
+        MRA_boundary = gpd.read_file("Spatial_data/Metropoolregio_RDnew.shp")
+    except Exception as error:
+        logging.critical(error)
+        raise
+
+    # extract ontdoeners from LMA dataset to connect nace
+    # all other roles have predefined NACE codes
+    logging.info("Extract ontdoeners...")
+    ontdoener_columns = [col for col in dataframe.columns if "Ontdoener" in col]
+    ontdoeners = dataframe[ontdoener_columns]
+    ontdoeners.columns = [col.split("_")[-1] for col in ontdoener_columns]
+    ontdoeners = ontdoeners.rename(columns={"Ontdoener": "Name"})
+    logging.info(f"Original ontdoeners: {len(ontdoeners.index)}")
+
+    # prepare key to match with KvK dataset (clean name + postcode)
+    ontdoeners["Key"] = ontdoeners["Name"].str.cat(ontdoeners[["Postcode"]], sep=" ")
+
+    # first ontdoeners need to be matched with their own locations
+    # taking out route actors first
+    ontdoeners.loc[ontdoeners["Key"].str.contains("route"), "route"] = "J"
+    ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"].apply(lambda x: str(x).strip(" route"))
+
+    # remove any ontdoeners with no location
+    missing_locations = ontdoeners[ontdoeners["Location"].isnull()]
+    if len(missing_locations.index):
+        logging.warning(f"Remove {len(missing_locations.index)} ontdoeners with missing locations...")
+        ontdoeners.dropna(subset=["Location"], inplace=True)
+
+    # after filtering missing locations, add route info again
+    ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"] + " route"
+    # logging.info(f"{ontdoeners["key"].nunique()} ontdoeners to connect NACE...")
+
+    # convert WKT to geometry
+    ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
+    LMAgdf = gpd.GeoDataFrame(ontdoeners, geometry="Location", crs={"init": "epsg:28992"})
+
+    # check which ontdoeners are within the casestudy area
+    joined = gpd.sjoin(LMAgdf, MRA_boundary, how="left", op="within")
+    in_boundary = joined[joined["OBJECTID"].isna() == False]
+    out_boundary = joined[joined["OBJECTID"].isna()]
+
+    # logging.info(f"{in_boundary["key"].nunique()} ontdoeners are inside the casestudy area")
+    if len(out_boundary.index):
+        logging.warning(f"Remove {out_boundary['Key'].nunique()} ontdoeners outside the casestudy area")
+
+    # further matching only happens for the actors inside the boundary
+    LMA_inbound = in_boundary[ontdoeners.columns]
+
+    # route inzameling gets a separate nace code as well
+    route = LMA_inbound[LMA_inbound["route"] == "J"]
+    if len(route.index):
+        logging.warning(f"Remove {route['Key'].nunique()} ontdoeners belonging to route inzameling")
+
+    LMA_inbound = LMA_inbound[LMA_inbound["route"] != "J"]
+    LMA_inbound.drop(columns=["route"])
+
+    total_inbound = LMA_inbound["Key"].nunique()
+    logging.info(f"Unique ontdoeners for matching: {total_inbound}")
+
+    # ______________________________________________________________________________
+    # 1. BY NAME AND ADDRESS
+    #    both name and address are the same
+    # ______________________________________________________________________________
+
+    output_by_name_address = match_by_name_and_address(LMA_inbound)
+    perc = round(len(output_by_name_address.index) / float(total_inbound) * 100, 2)
+    logging.warning(f"{len(output_by_name_address.index)} ontdoeners matched by name & postcode ({perc}%)")
+
+    # take out those ontdoeners that had not been matched
+    remaining = LMA_inbound[(LMA_inbound["Key"].isin(output_by_name_address["Key"]) == False)]
+
+    # ______________________________________________________________________________
+    # 2. BY NAME ONLY
+    #    geographically closer one gets a priority
+    # ______________________________________________________________________________
+
+    output_by_name = match_by_name(remaining)
+    perc = round(len(output_by_name.index) / float(total_inbound) * 100, 2)
+    logging.warning(f"{len(output_by_name.index)} ontdoeners matched only by name ({perc}%)")
+
+    # take out those Ontdoeners that had not been matched
+    remaining = remaining[(remaining["Key"].isin(output_by_name["Key"]) == False)]
+
+    # ______________________________________________________________________________
+    # 3. BY ADDRESS ONLY
+    # ______________________________________________________________________________
+
+    output_by_address = match_by_address(remaining)
+    perc = round(len(output_by_address.index) / float(total_inbound) * 100, 2)
+    logging.warning(f"{len(output_by_address.index)} ontdoeners matched only by address ({perc}%)")
+
+    # take out those actors that had not been matched
+    remaining = remaining[(remaining["Key"].isin(output_by_address["Key"]) == False)]
+
+    # ______________________________________________________________________________
+    # 4. BY  GEO AND TEXT PROXIMITY
+    #    closest name within a certain radius
+    # ______________________________________________________________________________
+
+    output_by_text_proximity, distances = match_by_text_proximity(remaining)
+    perc = round(len(output_by_text_proximity.index) / float(total_inbound) * 100, 2)
+    logging.warning(f"{len(output_by_text_proximity.index)} ontdoeners matched with the closest name match "
+                    f"in <{var.buffer_dist}m ({perc}%)")
+
+    # take out those actors that had not been matched
+    remaining = remaining[(remaining["Key"].isin(output_by_text_proximity["Key"]) == False)]
+
+    # ______________________________________________________________________________
+    # 5. BY GEO PROXIMITY
+    # ______________________________________________________________________________
+
+    output_by_geo_proximity = match_by_geo_proximity(remaining, distances)
     perc = round(len(output_by_geo_proximity.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_by_geo_proximity.index)} ontdoeners matched by proximity ({perc}%)")
+    logging.warning(f"{len(output_by_geo_proximity.index)} ontdoeners matched by proximity ({perc}%)")
 
     # take out those actors that had not been matched
     remaining = remaining[(remaining["Key"].isin(output_by_geo_proximity["Key"]) == False)]
 
     # ______________________________________________________________________________
     # 5. UNMATCHED
-    #    not matched with anything, gets a dummy NACE code
-    #    points outside the LISA boundary also get a dummy code
+    #    dummy NACE code for:
+    #    A) unmatched points
+    #    B) points outside the LISA boundary also get a dummy code
+    #    C) route points
     # ______________________________________________________________________________
 
     remaining[["AG", "activenq"]] = ["W", "0000"]
@@ -287,7 +333,7 @@ def run(dataframe):
     output_unmatched["how"] = "unmatched"
 
     perc = round(len(output_unmatched.index) / float(total_inbound) * 100, 2)
-    logging.info(f"{len(output_unmatched.index)} ontdoeners unmatched ({perc}%)")
+    logging.warning(f"{len(output_unmatched.index)} ontdoeners unmatched ({perc}%)")
 
     all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
                          output_by_text_proximity, output_by_geo_proximity, output_unmatched])
@@ -297,30 +343,34 @@ def run(dataframe):
     ontdoeners.index = original_index
     dataframe["Ontdoener_NACE"] = ontdoeners["AG"].str.cat(ontdoeners["activenq"].astype(str).str[:4], sep="-")
 
-    nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
-    nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
-    nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
-    nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
-    nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
-    nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
-    nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
-    nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
-    nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
-
-    flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
-    flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
-    flows.columns = ['NACE', 'EWC_code']
-
-    flows_1 = flows
-    indices = flows_1.index
-    flows_1['NACE'] = flows_1['NACE'].str[:1]
-    nace_ewc_1 = nace_ewc[nace_ewc['level'] == 1]
-    nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:1]
-    nace_ewc_1.drop_duplicates(inplace=True)
-    match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE', 'EWC_code'])
-    match.index = indices
-    match = match[match['level'].notnull()]
-    print(match)
+    # # ------------------------------------------------------------------------------
+    # # NACE - EWC VALIDATION
+    # # ------------------------------------------------------------------------------
+    #
+    # nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
+    # nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
+    # nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
+    # nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
+    # nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
+    # nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
+    # nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
+    # nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
+    # nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
+    #
+    # flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
+    # flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
+    # flows.columns = ['NACE', 'EWC_code']
+    #
+    # flows_1 = flows
+    # indices = flows_1.index
+    # flows_1['NACE'] = flows_1['NACE'].str[:6]
+    # nace_ewc_1 = nace_ewc[nace_ewc['level'] == 4]
+    # nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:6]
+    # nace_ewc_1.drop_duplicates(inplace=True)
+    # match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE', 'EWC_code'])
+    # match.index = indices
+    # match = match[match['level'].notnull()]
+    # print(match)
 
     # ______________________________________________________________________________
     # ______________________________________________________________________________

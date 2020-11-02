@@ -9,6 +9,12 @@ import variables as var
 
 
 def run(dataframe):
+    """
+    Extract & filter columns from the original dataset
+    :param dataframe: the original dataset
+    :return: the filtered dataset
+    """
+
     # selection of the columns we want to include in our analysis
     LMA_columns = var.LMA_columns
 
@@ -20,6 +26,7 @@ def run(dataframe):
         logging.critical(error)
         raise
 
+    # save the size of the original dataframe
     original_length = len(LMA.index)
 
     # if "Herkomst" has all columns empty, copy from "Ontdoener"
@@ -74,6 +81,7 @@ def run(dataframe):
         LMA = LMA[LMA["Aantal_vrachten"] >= 1]
         logging.warning(f"{e} lines have specified 0 trips and will be removed")
 
+    # log the final dataframe size after cleaning
     if original_length:
         perc = round(len(LMA.index) / original_length * 100, 1)
         logging.info(f"Final dataset length: {len(LMA.index)} lines ({perc}%)")

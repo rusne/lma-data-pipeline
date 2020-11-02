@@ -1,4 +1,7 @@
-# Clean typos
+"""
+This module cleans the dataframe columns and
+prepares them for further analysis
+"""
 import logging
 import numpy as np
 import geolocate
@@ -6,7 +9,13 @@ import variables as var
 import pandas as pd
 import geopandas as gpd
 
+
 def clean_description(desc):
+    """
+    Apply function to clean rows from the description column
+    :param desc: row from description column
+    :return: formatted row
+    """
     desc = desc.strip()
     desc = desc.lower()
     desc = desc.replace(u"\xa0", u" ")
@@ -17,6 +26,11 @@ def clean_description(desc):
 
 
 def clean_postcode(postcode):
+    """
+    Apply function to clean rows from the postcode column of each role
+    :param desc: row from role postcode column
+    :return: formatted row
+    """
     postcode = postcode.strip()
     postcode = postcode.replace(" ","")
     postcode = postcode.upper()
@@ -26,6 +40,12 @@ def clean_postcode(postcode):
 
 
 def clean_company_name(name):
+    """
+    Apply function to clean rows from the company name column of each role
+    :param desc: row from company name column for each column
+    :return: formatted row
+    """
+
     # remove all non-ASCII characters
     orig_name = name
     printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r\x0b\x0c"
@@ -52,6 +72,11 @@ def clean_company_name(name):
 
 
 def clean_address(address):
+    """
+    Apply function to clean rows from the street/city column of each role
+    :param desc: row from street/city column
+    :return: formatted row
+    """
     address = address.strip()
     address = address.upper()
     address = " ".join(address.split())
@@ -59,23 +84,39 @@ def clean_address(address):
 
 
 def clean_huisnr(nr):
+    """
+    Apply function to clean rows from the house number column of each role
+    :param desc: row from house number column
+    :return: formatted row
+    """
     nr = nr.split(".")[0]
     nr = "".join(filter(lambda x: x in "0123456789", nr))
     return nr
 
 
 def clean_nace(nace):
+    """
+    Apply function to clean NACE codes
+    :param desc: row with NACE code
+    :return: formatted row
+    """
     nace = "".join(filter(lambda x: x in "0123456789", nace))
     return nace
 
 
 def run(dataframe):
-    # clean the BenamingAfval field
-    logging.info("Cleaning descriptions...")
+    """
+    Clean role columns & geolocate them
+    to prepare for further analysis
+    :param dataframe: dataframe filtered from erroneous entries
+    :return: dataframe with formatted role info & geolocation
+    """
+    # clean the BenamingAfval column (waste descriptions)
+    logging.info("Cleaning descriptions (BenamingAfval) ...")
     dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
     dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
-    # load geolocations
+    # load geolocations (TO BE REMOVED IN THE FINAL VERSION)
     geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)
 
     geo["straat"] = geo["straat"].astype("str")
@@ -131,7 +172,7 @@ def run(dataframe):
         # prepare address for geolocation
         dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=" ")
 
-        # geolocate
+        # geolocate (TO BE REMOVED IN THE FINAL VERSION)
         addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
 
         addresses.index = dataframe.index  # keep original index
@@ -140,7 +181,7 @@ def run(dataframe):
         locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init": "epsg:28992"})
         dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
 
-        # # geolocate
+        # # geolocate (FINAL VERSION)
         # logging.info(f"Geolocate for {role}...")
         # addresses = dataframe[[f"{role}_Adres", postcode]]
         # addresses.columns = ["adres", "postcode"]
