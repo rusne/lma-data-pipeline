@@ -370,35 +370,6 @@ def run(dataframe):
     ontdoeners.index = original_index
     dataframe["Ontdoener_NACE"] = ontdoeners["AG"].str.cat(ontdoeners["activenq"].astype(str).str[:4], sep="-")
 
-    # # ------------------------------------------------------------------------------
-    # # NACE - EWC VALIDATION
-    # # ------------------------------------------------------------------------------
-
-    nace_ewc = pd.read_csv('Private_data/NACE-EWC.csv', low_memory=False)
-    nace_ewc['EWC_code'] = nace_ewc['EWC_code'].str.replace('*', '').str.strip()
-    nace_ewc[['EWC_2', 'EWC_4', 'EWC_6']] = nace_ewc['EWC_code'].str.split(expand=True)
-    nace_ewc['EWC_2'] = nace_ewc['EWC_2'].str.zfill(2)
-    nace_ewc['EWC_4'] = nace_ewc['EWC_4'].str.zfill(2)
-    nace_ewc['EWC_6'] = nace_ewc['EWC_6'].str.zfill(2)
-    nace_ewc['EWC_code'] = nace_ewc['EWC_2'].str.cat(nace_ewc[['EWC_4', 'EWC_6']], sep="")
-    nace_ewc.rename(columns={'NACE level on which EWC is applied': 'level'}, inplace=True)
-    nace_ewc = nace_ewc[['NACE', 'level', 'EWC_code']]
-
-    flows = dataframe[['Ontdoener_NACE', 'EuralCode']]
-    flows['EuralCode'] = flows['EuralCode'].astype(str).str.zfill(6)
-    flows.columns = ['NACE', 'EWC_code']
-
-    flows_1 = flows
-    indices = flows_1.index
-    flows_1['NACE'] = flows_1['NACE'].str[:1]
-    nace_ewc_1 = nace_ewc[nace_ewc['level'] == 1]
-    nace_ewc_1['NACE'] = nace_ewc_1['NACE'].str[:1]
-    nace_ewc_1.drop_duplicates(inplace=True)
-    match = pd.merge(flows_1, nace_ewc_1, how='left', on=['NACE'])
-    # match.index = indices
-    match = match[match['level'].isnull()].drop_duplicates(subset=['NACE'])
-    print(match)
-
     # ______________________________________________________________________________
     # ______________________________________________________________________________
     # G I V I N G   N A C E   T O   A L L   O T H E R   R O L E S

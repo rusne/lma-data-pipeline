@@ -4,8 +4,7 @@ import pandas as pd
 import filtering
 import clean
 import connect_nace
-# import classify.run
-# import save.run
+import classify
 # import prepare_kvk
 
 import warnings  # ignore unnecessary warnings
@@ -28,6 +27,7 @@ if __name__ == "__main__":
     try:
         dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
         # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
+        # dataframe = dataframe[:100000]
     except Exception as error:
         logging.critical(error)
         raise
@@ -44,11 +44,9 @@ if __name__ == "__main__":
     logging.info("CONNECT NACE...")
     dataframe = connect_nace.run(dataframe)
 
-    # # classify
-    # classified_df = classify.run(connected_df)
-
-    # # save
-    # saved_df = save.run(analyzed_df)
+    # classify
+    logging.info("CLASSIFY...")
+    dataframe = classify.run(dataframe)
 
     # end pipeline
     logging.info("END PIPELINE...")
