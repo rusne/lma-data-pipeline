@@ -113,7 +113,7 @@ def run(dataframe):
     """
     # clean the BenamingAfval column (waste descriptions)
     if "BenamingAfval" in dataframe.columns:
-        logging.info("Cleaning descriptions (BenamingAfval) ...")
+        logging.info("Clean descriptions (BenamingAfval)...")
         dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
         dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
@@ -137,7 +137,7 @@ def run(dataframe):
     # clean role columns
     roles = var.roles
     for role in roles:
-        logging.info(f"Cleaning {role} columns...")
+        logging.info(f"Clean & geolocate {role}s...")
 
         # list columns for cleaning
         orig_name = f"{role}_Origname"

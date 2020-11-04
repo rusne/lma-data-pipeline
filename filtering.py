@@ -27,11 +27,11 @@ def run(dataframe):
         logging.critical(error)
         raise
 
-    # save the size of the original dataframe
+    # record size of original dataframe & removals
     original_length = len(LMA.index)
 
     # if "Herkomst" has all columns empty, copy from "Ontdoener"
-    if any('Herkomst' in col for col in dataframe.columns):
+    if any('Herkomst' in col for col in LMA.columns):
         Herkomst_columns = [col for col in LMA.columns if "Herkomst" in col]
         all_null = [LMA[col].isnull() for col in Herkomst_columns]
         idx = LMA[np.bitwise_and.reduce(all_null)].index
@@ -49,42 +49,41 @@ def run(dataframe):
             e = len(LMA[LMA[role].isnull()].index)
             if e:
                 LMA = LMA[LMA[role].notnull()]
-                logging.warning(f"{e} lines do not have a {role} specified and will be removed")
+                logging.warning(f"{e} lines without {role} removed")
 
         # empty postcode
         postcode = role + "_Postcode"
         e = len(LMA[LMA[postcode].isnull()].index)
         if e:
             LMA = LMA[LMA[postcode].notnull()]
-            logging.warning(f"{e} lines do not have a {postcode} specified and will be removed")
+            logging.warning(f"{e} lines without {postcode} removed")
 
     # empty year
     e = len(LMA[LMA["MeldPeriodeJAAR"].isnull()].index)
     if e:
         LMA = LMA[LMA.MeldPeriodeJAAR.notnull()]
-        logging.warning(f"{e} lines do not have a year specified and will be removed")
+        logging.warning(f"{e} lines without year removed")
 
     # empty month
     e = len(LMA[LMA["MeldPeriodeMAAND"].isnull()].index)
     if e:
         LMA = LMA[LMA.MeldPeriodeMAAND.notnull()]
-        logging.warning(f"{e} lines do not have a month specified and will be removed")
+        logging.warning(f"{e} lines without month removed")
 
     # zero amount
     e = len(LMA[LMA["Gewicht_KG"] < 1].index)
     if e:
         LMA = LMA[LMA["Gewicht_KG"] >= 1]
-        logging.warning(f"{e} lines have specified 0 weight and will be removed")
+        logging.warning(f"{e} lines without weight removed")
 
     # zero trips
     e = len(LMA[LMA["Aantal_vrachten"] < 1].index)
     if e:
         LMA = LMA[LMA["Aantal_vrachten"] >= 1]
-        logging.warning(f"{e} lines have specified 0 trips and will be removed")
+        logging.warning(f"{e} lines without trips removed")
 
     # log the final dataframe size after cleaning
-    if original_length:
-        perc = round(len(LMA.index) / original_length * 100, 1)
-        logging.info(f"Final dataset length: {len(LMA.index)} lines ({perc}%)")
+    perc = round(len(LMA.index) / original_length * 100, 1)
+    logging.info(f"Final dataset length: {len(LMA.index)} lines ({perc}%)")
 
     return LMA

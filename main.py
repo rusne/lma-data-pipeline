@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import pytest
 
 import filtering
 import clean
@@ -20,36 +21,51 @@ if __name__ == "__main__":
                         format="%(asctime)s [%(levelname)s]: %(message)s")  # message format
 
     # start pipeline
-    logging.info("START PIPELINE...")
+    logging.info("START PIPELINE...\n")
 
-    # TEST DATAFRAME
+    # load dataset
     logging.info("LOAD DATASET...")
     try:
         dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
         # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
         # dataframe = dataframe[:100000]
+        assert len(dataframe.index) > 0
     except Exception as error:
+        if type(error) == FileNotFoundError:
+            logging.critical('Dataset file not found!')
+        elif type(error) == AssertionError:
+            logging.critical('Dataset file is empty!')
         logging.critical(error)
         raise
+    logging.info("LOAD COMPLETE!\n")
 
     # filter
     logging.info("FILTER DATASET...")
-    dataframe = filtering.run(dataframe)
+    filtered_dataframe = filtering.run(dataframe)
+    logging.info("FILTER COMPLETE!\n")
 
     # clean
     logging.info("CLEAN DATASET...")
-    dataframe = clean.run(dataframe)
+    cleaned_dataframe = clean.run(filtered_dataframe)
+    try:
+        assert len(cleaned_dataframe.index) == len(filtered_dataframe.index)
+    except AssertionError:
+        logging.critical('Dataset size changed!')
+        raise
+    logging.info("CLEAN COMPLETE!\n")
 
     # connect nace
-    logging.info("CONNECT NACE...")
-    dataframe = connect_nace.run(dataframe)
+    logging.info("CONNECT NACE TO DATASET...")
+    connected_dataframe = connect_nace.run(cleaned_dataframe)
+    logging.info("CONNECT NACE COMPLETE!\n")
 
     # classify
-    logging.info("CLASSIFY...")
-    dataframe = classify.run(dataframe)
+    logging.info("CLASSIFY DATASET...")
+    classified_dataframe = classify.run(connected_dataframe)
+    logging.info("CLASSIFY COMPLETE!\n")
 
     # end pipeline
-    logging.info("END PIPELINE...")
+    logging.info("PIPELINE COMPLETE!")
 
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")

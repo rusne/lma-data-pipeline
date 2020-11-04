@@ -236,7 +236,7 @@ def run(dataframe):
     ontdoeners = dataframe[ontdoener_columns]
     ontdoeners.columns = [col.split("_")[-1] for col in ontdoener_columns]
     ontdoeners = ontdoeners.rename(columns={"Ontdoener": "Name"})
-    logging.info(f"Original ontdoeners: {len(ontdoeners.index)}")
+    # logging.info(f"Original ontdoeners: {len(ontdoeners.index)}")
 
     # prepare key to match with KvK dataset (clean name + postcode)
     ontdoeners["Key"] = ontdoeners["Name"].str.cat(ontdoeners[["Postcode"]], sep=" ")
@@ -254,7 +254,7 @@ def run(dataframe):
 
     # after filtering missing locations, add route info again
     ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"] + " route"
-    # logging.info(f"{ontdoeners["key"].nunique()} ontdoeners to connect NACE...")
+    logging.info(f"{ontdoeners['Key'].nunique()} unique ontdoeners to connect NACE...")
 
     # convert WKT to geometry
     ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
@@ -266,22 +266,22 @@ def run(dataframe):
     out_boundary = joined[joined["OBJECTID"].isna()]
 
     # logging.info(f"{in_boundary["key"].nunique()} ontdoeners are inside the casestudy area")
-    if len(out_boundary.index):
-        logging.warning(f"Remove {out_boundary['Key'].nunique()} ontdoeners outside the casestudy area")
+    # if len(out_boundary.index):
+    #     logging.warning(f"Remove {out_boundary['Key'].nunique()} ontdoeners outside the casestudy area")
 
     # further matching only happens for the actors inside the boundary
     LMA_inbound = in_boundary[ontdoeners.columns]
 
     # route inzameling gets a separate nace code as well
     route = LMA_inbound[LMA_inbound["route"] == "J"]
-    if len(route.index):
-        logging.warning(f"Remove {route['Key'].nunique()} ontdoeners belonging to route inzameling")
+    # if len(route.index):
+    #     logging.warning(f"Remove {route['Key'].nunique()} ontdoeners belonging to route inzameling")
 
     LMA_inbound = LMA_inbound[LMA_inbound["route"] != "J"]
     LMA_inbound.drop(columns=["route"])
 
     total_inbound = LMA_inbound["Key"].nunique()
-    logging.info(f"Unique ontdoeners for matching: {total_inbound}")
+    # logging.info(f"Unique ontdoeners for matching: {total_inbound}")
 
     # ______________________________________________________________________________
     # 1. BY NAME AND ADDRESS
@@ -382,6 +382,7 @@ def run(dataframe):
 
     for role in map_roles:
         if f"{role}" in dummy_nace.keys():
+            logging.info(f"Assign NACE to {role}s...")
             dataframe[f"{role}_activenq"] = dummy_nace[f"{role}"]
 
     return dataframe
