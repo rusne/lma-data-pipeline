@@ -1,0 +1,79 @@
+Format: CSV
+
+Filters:
+MeldPeriodeJAAR = [2016, 2017, 2018, 2019, 2020]
+AND
+(Ontdoener_Postcode = [AMA_postcodes.csv]
+OR Herkomst_Postcode = [AMA_postcodes.csv]
+OR Verwerker_Postcode = [AMA_postcodes.csv]
+OR EerstAfnemer_Postcode = [AMA_postcodes.csv])
+
+
+Necessary columns:
+
+Ontvangstmeldingen
+  Afvalstroomnummer
+  Ontdoener
+  Ontdoener_Straat
+  Ontdoener_Huisnr
+  Ontdoener_Postcode
+  Ontdoener_Plaats
+  Ontdoener_Land
+  Herkomst_Straat
+  Herkomst_Huisnr
+  Herkomst_Postcode
+  Herkomst_Plaats
+  Herkomst_Land
+  Ontvanger
+  Ontvanger_Straat
+  Ontvanger_Huisnummer
+  Ontvanger_Postcode
+  Ontvanger_Plaats
+  Ontvanger_Land
+  Verwerker
+  Verwerker_Straat
+  Verwerker_Huisnummer
+  Verwerker_Postcode
+  Verwerker_Plaats
+  RouteInzameling
+  Inzamelaarsregeling
+  ToegestaanbijInzamelaarsregeling
+  EuralCode
+  EuralcodeOmschrijving
+  BenamingAfval
+  VerwerkingsmethodeCode
+  VerwerkingsOmschrijving
+  MeldPeriodeJAAR
+  MeldPeriodeMAAND
+  Gewicht_KG
+  Aantal_vrachten
+
+Afgiftemeldingen
+  Verwerkersnummer
+  GangbareNaam
+  Verwerker_Straat
+  Verwerker_Huisnummer
+  Verwerker_Postcode
+  Verwerker_Plaats
+  Ontdoener_Bedrijfsnr
+  Ontdoener
+  Ontdoener_Straat
+  Ontdoener_Huisnr
+  Ontdoener_Postcode
+  Ontdoener_Plaats
+  Ontdoener_Land
+  EerstAfnemer_Bedrijfsnr
+  EerstAfnemer
+  EerstAfnemer_Straat
+  EerstAfnemer_Huisnr
+  EerstAfnemer_Postcode
+  EerstAfnemer_Plaats
+  EerstAfnemer_Land
+  VerwerkingsmethodeCode
+  VerwerkingsOmschrijving
+  EuralCode
+  EuralcodeOmschrijving
+  MeldPeriodeJAAR
+  MeldPeriodeMAAND
+  Gewicht_KG
+  Aantal_vrachten
