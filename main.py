@@ -66,8 +66,8 @@ if __name__ == "__main__":
 
     # end pipeline
     logging.info("PIPELINE COMPLETE!")
+    classified_dataframe.to_excel("Private_data/results.xlsx")
 
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")
     # dataframe = prepare_kvk.run(dataframe)
-

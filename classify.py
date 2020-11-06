@@ -75,7 +75,7 @@ def run(dataframe):
     logging.info(f"Add value chain based on NACE...")
 
     # read NACE-EWC validation file
-    value_chains = pd.read_csv('Private_data/NACE_valuechains.csv', low_memory=False)
+    value_chains = pd.read_excel('Private_data/NACE_valuechains.xlsx')
     value_chains = value_chains[['Code', 'Value chain (Based on AG code)']]
     value_chains.columns = ['Ontdoener_NACE', 'Value_chain']
 

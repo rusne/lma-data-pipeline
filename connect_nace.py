@@ -146,7 +146,11 @@ def match_by_text_proximity(remaining):
     distances = pd.merge(contains, KvK_actors_geo[["wkt"]], left_on="index_right", right_index=True)
     distances = pd.merge(distances, LMA_inbound4[["Origname", "Adres", "Location"]], left_index=True, right_index=True)
 
-    distances["dist"] = distances["wkt"].distance(distances["Location"])
+    # make sure that geodataframe has the right column set as geometry
+    distances = distances.set_geometry("wkt")
+    destinations = distances.set_geometry("Location")
+
+    distances["dist"] = distances["wkt"].distance(destinations["Location"])
 
     fuzz_ratio = [fuzz.ratio(x, y) for x, y in zip(distances["orig_zaaknaam"], distances["Origname"])]
     distances["text_dist"] = pd.Series(fuzz_ratio, index=distances.index)
@@ -215,7 +219,7 @@ def run(dataframe):
     try:
         global KvK_actors
         # KvK_actors = pd.read_excel("Private_data/KvK_data/raw_data/all_LISA_part2.xlsx")
-        KvK_actors = pd.read_csv("Private_data/KvK_data/raw_data/all_LISA_part2.csv", low_memory=False)
+        KvK_actors = pd.read_csv("Private_data/all_KvK.csv", low_memory=False)
     except Exception as error:
         logging.critical(error)
         raise
@@ -350,9 +354,9 @@ def run(dataframe):
     #    C) route points
     # ______________________________________________________________________________
 
-    remaining[["AG", "activenq"]] = ["W", "0000"]
-    out_boundary[["AG", "activenq"]] = ["W", "0001"]
-    route[["AG", "activenq"]] = ["W", "0002"]
+    remaining["AG"], remaining["activenq"] = ["W", "0000"]
+    out_boundary["AG"], out_boundary["activenq"] = ["W", "0001"]
+    route["AG"], route["activenq"] = ["W", "0002"]
 
     output_unmatched = pd.concat([remaining[output_columns], out_boundary[output_columns], route[output_columns]])
     output_unmatched.drop_duplicates(subset=["Key"], inplace=True)

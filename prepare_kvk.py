@@ -3,6 +3,8 @@
 # filters out companies without a NACE code,
 # prepares unlocated entries for the geolocation
 
+# TODO filter out all actors that do not belong to the SBI codes that are supposed to produce waste
+
 import pandas as pd
 import logging
 from clean import (clean_company_name,
