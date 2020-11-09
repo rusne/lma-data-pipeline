@@ -129,10 +129,8 @@ def run(dataframe):
     geo["postcode"] = geo["postcode"].astype("str")
     geo["postcode"] = geo["postcode"].apply(clean_postcode)
 
-    geo["plaats"] = geo["plaats"].astype("str")
-    geo["plaats"] = geo["plaats"].apply(clean_address)
-
-    geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode", "plaats"]], sep=" ")
+    geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode"]], sep=" ")
+    geo.drop_duplicates(subset=['adres'], inplace=True)
 
     # clean role columns
     roles = var.roles
@@ -171,7 +169,7 @@ def run(dataframe):
         dataframe[plaats] = dataframe[plaats].apply(clean_address)
 
         # prepare address for geolocation
-        dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode, plaats]], sep=" ")
+        dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode]], sep=" ")
 
         # geolocate (TO BE REMOVED IN THE FINAL VERSION)
         addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")

@@ -108,7 +108,7 @@ def run(dataframe):
             KvK_ver = KvK_ver[KvK_ver["postcode"].str.len() == 6]
 
             # join address into a single column for easier geolocation
-            KvK_ver["adres"] = KvK_ver["straat"].str.cat(KvK_ver[["huisnr", "postcode", "plaats"]], sep=" ")
+            KvK_ver["adres"] = KvK_ver["straat"].str.cat(KvK_ver[["huisnr", "postcode"]], sep=" ")
 
             # create a key for each separate actor (name + postcode)
             KvK_ver["key"] = KvK_ver["zaaknaam"].str.cat(KvK_ver[["postcode"]], sep=" ")

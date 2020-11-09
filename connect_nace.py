@@ -16,6 +16,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 pd.options.mode.chained_assignment = None
 
 KvK_actors = None
+nace_ewc = None
 control_output = None
 control_columns = ["Key", "Origname", "Adres", "orig_zaaknaam", "adres", "activenq", "AG"]
 output_columns = ["Key", "Origname", "AG", "activenq"]
@@ -27,7 +28,7 @@ def match_by_name_and_address(LMA_inbound):
     :param LMA_inbound:
     :return:
     """
-    LMA_inbound1 = LMA_inbound[["Key", "Origname", "Adres"]].copy()
+    LMA_inbound1 = LMA_inbound[["Key", "Origname", "Adres", "EuralCode"]].copy()
     LMA_inbound1.drop_duplicates(subset=["Key"], inplace=True)
 
     by_name_and_address = pd.merge(LMA_inbound1, KvK_actors, left_on="Key", right_on="key")
@@ -50,12 +51,14 @@ def match_by_name(remaining):
     :param remaining:
     :return:
     """
-    LMA_inbound2 = remaining[["Key", "Name", "Origname", "Adres", "Location"]].copy()
+    LMA_inbound2 = remaining[["Key", "Name", "Origname", "Adres", "Location", 'EuralCode']].copy()
     LMA_inbound2.drop_duplicates(subset=["Key"], inplace=True)
 
     by_name = pd.merge(LMA_inbound2, KvK_actors, left_on="Name", right_on="zaaknaam")
     by_name["wkt"] = by_name["wkt"].apply(wkt.loads)
     by_name["dist"] = by_name.apply(lambda x: x["wkt"].distance(x["Location"]), axis=1, result_type="reduce")
+
+    by_name = pd.merge(by_name, nace_ewc, on=['activenq', 'EuralCode'])
     closest = by_name.loc[by_name.groupby(["Key"])["dist"].idxmin()]
 
     # matching control output
@@ -77,38 +80,25 @@ def match_by_address(remaining):
     :param remaining:
     :return:
     """
-    LMA_inbound3 = remaining[["Key", "Origname", "Adres", "Postcode"]].copy()
+    LMA_inbound3 = remaining[["Key", "Origname", "Adres", "Postcode", 'EuralCode']].copy()
     LMA_inbound3.drop_duplicates(subset=["Key"], inplace=True)
 
-    by_address = pd.merge(LMA_inbound3, KvK_actors, left_on=["Adres", "Postcode"], right_on=["adres", "postcode"])
+    KvK_actors["adres"] = KvK_actors["adres"].str.cat(KvK_actors[["postcode"]], sep=" ") # (TO BE REMOVED IN THE FINAL VERSION)
+    by_address = pd.merge(LMA_inbound3, KvK_actors, left_on=["Adres"], right_on=["adres"])
 
     # find those that got matched to only one NACE group
     by_address["count"] = by_address.groupby(["Key"])["AG"].transform("count")
-    by_address = by_address[by_address["count"] == 1]
 
-    # matched_by_address = by_address[by_address["count"] == 1]
-    #
-    # perc = round(len(matched_by_address.index) / float(total_inbound) * 100, 2)
-    # logging.info(f"{len(matched_by_address.index)} actors matched only by address ({perc}%)")
+    # only one activity
+    matched_by_address = by_address[by_address["count"] == 1]
 
-    # ambiguous = by_address[by_address["count"] > 1]
+    # multiple activities - we need to choose based on NACE-EWC
+    ambiguous = by_address[by_address["count"] > 1]
+    ambiguous = pd.merge(ambiguous, nace_ewc, on=['activenq', 'EuralCode'])
+    ambiguous["count"] = ambiguous.groupby(["Key"])["AG"].transform("count")
+    matched_ambiguous = ambiguous[ambiguous["count"] == 1]
 
-    # # give priority by year if possible, otherwise discard the matching
-    # temp = pd.DataFrame(columns=ambiguous.columns)
-    # for year in var.map_years:
-    #     col = "in{0}".format(year)
-    #     m = ambiguous[(ambiguous["Jaar"] == year) & (ambiguous[col].astype(str) == "JA")]
-    #     temp.append(m)
-    #
-    # ambiguous["count"] = ambiguous.groupby(["Key"])["AGcode"].transform("count")
-    # matched_ambiguous = ambiguous[ambiguous["count"] == 1]
-    #
-    # print(matched_ambiguous["Key"].nunique(), "additional actors have been matched by address and year")
-    #
-    # discard = ambiguous[ambiguous["count"] > 1]
-    # print(discard["Key"].nunique(), "matches have been discarded due to multiple NACE codes")
-    #
-    # by_address = pd.concat([matched_by_address, matched_ambiguous])
+    by_address = pd.concat([matched_by_address, matched_ambiguous])
 
     # matching control output
     control_output_3 = by_address[control_columns]
@@ -136,7 +126,7 @@ def match_by_text_proximity(remaining):
     KvK_actors_geo = gpd.GeoDataFrame(KvK_actors[["key", "orig_zaaknaam", "adres", "activenq", "AG", "wkt"]],
                                       geometry="wkt", crs={"init": "epsg:28992"})
 
-    LMA_inbound4 = remaining[["Key", "Origname", "Adres", "Location"]]
+    LMA_inbound4 = remaining[["Key", "Origname", "Adres", "Location", 'EuralCode']]
     LMA_inbound4.drop_duplicates(subset=["Key"], inplace=True)
     LMA_inbound4["buffer"] = LMA_inbound4["Location"].buffer(var.buffer_dist)
     buffers = gpd.GeoDataFrame(LMA_inbound4[["Key", "buffer"]], geometry="buffer", crs={"init": "epsg:28992"})
@@ -144,7 +134,8 @@ def match_by_text_proximity(remaining):
     contains = gpd.sjoin(buffers, KvK_actors_geo, how="inner", op="intersects")
 
     distances = pd.merge(contains, KvK_actors_geo[["wkt"]], left_on="index_right", right_index=True)
-    distances = pd.merge(distances, LMA_inbound4[["Origname", "Adres", "Location"]], left_index=True, right_index=True)
+    distances = pd.merge(distances, LMA_inbound4[["Origname", "Adres", "Location", 'EuralCode']], left_index=True, right_index=True)
+    distances = pd.merge(distances, nace_ewc, on=['activenq', 'EuralCode'])
 
     # make sure that geodataframe has the right column set as geometry
     distances = distances.set_geometry("wkt")
@@ -185,12 +176,9 @@ def match_by_geo_proximity(remaining, distances):
     remaining.drop_duplicates(subset=["Key"], inplace=True)
 
     distances = distances[distances.index.isin(remaining.index)]
-    original_index = distances.drop_duplicates(subset=["Key"]).index
-    distances.reset_index(inplace=True)
 
     closest = distances.groupby(["Key"])["dist"].idxmin()
     matched_by_geo_proximity = pd.merge(remaining[["Key"]], distances.loc[closest], on="Key")
-    matched_by_geo_proximity.index = original_index
 
     # matching control output
     control_output_5 = matched_by_geo_proximity[control_columns]
@@ -218,11 +206,26 @@ def run(dataframe):
     logging.info("Import KvK dataset with geolocation...")
     try:
         global KvK_actors
-        # KvK_actors = pd.read_excel("Private_data/KvK_data/raw_data/all_LISA_part2.xlsx")
         KvK_actors = pd.read_csv("Private_data/all_KvK.csv", low_memory=False)
+        KvK_actors['activenq'] = KvK_actors['activenq'].astype(str).str[:4]
     except Exception as error:
         logging.critical(error)
         raise
+
+    # import NACE-EWC validation
+    # pairs of valid activity-waste codes
+    logging.info("Import NACE-EWC validation...")
+    try:
+        global nace_ewc
+        nace_ewc = pd.read_csv("Private_data/NACE-EWC.csv", low_memory=False)
+        nace_ewc['activenq'] = nace_ewc['activenq'].astype(str)
+    except Exception as error:
+        logging.critical(error)
+
+    # extract from KvK dataset only those actors
+    # whose activity code is included in NACE-EWC validation
+    nace = nace_ewc['activenq'].drop_duplicates()
+    KvK_actors = pd.merge(KvK_actors, nace, on='activenq')
 
     # load casestudy boundary
     # connect with KvK dataset only ontdoeners within the casestudy boundary
@@ -233,10 +236,11 @@ def run(dataframe):
         logging.critical(error)
         raise
 
-    # extract ontdoeners from LMA dataset to connect nace
+    # extract ontdoeners from LMA dataset to connect NACE
     # all other roles have predefined NACE codes
     logging.info("Extract ontdoeners...")
     ontdoener_columns = [col for col in dataframe.columns if "Ontdoener" in col]
+    ontdoener_columns.append('EuralCode')
     ontdoeners = dataframe[ontdoener_columns]
     ontdoeners.columns = [col.split("_")[-1] for col in ontdoener_columns]
     ontdoeners = ontdoeners.rename(columns={"Ontdoener": "Name"})
