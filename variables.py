@@ -13,87 +13,87 @@ dummy_nace = {
 buffer_dist = 250
 
 
-# # Ontvangstmeldingen
-# roles = [
-#     "Ontdoener",
-#     "Herkomst",
-#     "Verwerker"
-# ]
-#
-# connect_nace = "Ontdoener"
-#
-# LMA_columns = [
-#     "Afvalstroomnummer",
-#     "VerwerkingsmethodeCode",
-#     "VerwerkingsOmschrijving",
-#     "RouteInzameling",
-#     "Inzamelaarsregeling",
-#     "ToegestaanbijInzamelaarsregeling",
-#     "EuralCode",
-#     "BenamingAfval",
-#     "MeldPeriodeJAAR",
-#     "MeldPeriodeMAAND",
-#     "Gewicht_KG",
-#     "Aantal_vrachten",
-#     # Ontdoener
-#     "Ontdoener",
-#     "Ontdoener_Postcode",
-#     "Ontdoener_Plaats",
-#     "Ontdoener_Straat",
-#     "Ontdoener_Huisnr",
-#     # Herkomst
-#     "Herkomst_Postcode",
-#     "Herkomst_Straat",
-#     "Herkomst_Plaats",
-#     "Herkomst_Huisnr",
-#     # Verwerker
-#     "Verwerker",
-#     "Verwerker_Postcode",
-#     "Verwerker_Straat",
-#     "Verwerker_Plaats",
-#     "Verwerker_Huisnr"
-# ]
-
-
-# Afgiftemeldingen
+# Ontvangstmeldingen
 roles = [
     "Ontdoener",
-    "EerstAfnemer",
-    # "Verwerker"
+    "Herkomst",
+    "Verwerker"
 ]
 
-connect_nace = "EerstAfnemer"
+connect_nace = "Ontdoener"
 
 LMA_columns = [
-    "Verwerkersnummer",
-    "GangbareNaam",
-    # Verwerker
-    # "Verwerker_Straat",
-    # "Verwerker_Huisnummer",
-    # "Verwerker_Postcode",
-    # "Verwerker_Plaats",
-    # Ontdoener
-    "Ontdoener_Bedrijfsnr",
-    "Ontdoener",
-    "Ontdoener_Straat",
-    "Ontdoener_Huisnr",
-    "Ontdoener_Postcode",
-    "Ontdoener_Plaats",
-    "Ontdoener_Land",
-    # EerstAfnemer
-    "EerstAfnemer_Bedrijfsnr",
-    "EerstAfnemer",
-    "EerstAfnemer_Straat",
-    "EerstAfnemer_Huisnr",
-    "EerstAfnemer_Postcode",
-    "EerstAfnemer_Plaats",
-    "EerstAfnemer_Land",
+    "Afvalstroomnummer",
     "VerwerkingsmethodeCode",
     "VerwerkingsOmschrijving",
+    "RouteInzameling",
+    "Inzamelaarsregeling",
+    "ToegestaanbijInzamelaarsregeling",
     "EuralCode",
-    "EuralcodeOmschrijving",
+    "BenamingAfval",
     "MeldPeriodeJAAR",
     "MeldPeriodeMAAND",
     "Gewicht_KG",
-    "Aantal_vrachten"
+    "Aantal_vrachten",
+    # Ontdoener
+    "Ontdoener",
+    "Ontdoener_Postcode",
+    "Ontdoener_Plaats",
+    "Ontdoener_Straat",
+    "Ontdoener_Huisnr",
+    # Herkomst
+    "Herkomst_Postcode",
+    "Herkomst_Straat",
+    "Herkomst_Plaats",
+    "Herkomst_Huisnr",
+    # Verwerker
+    "Verwerker",
+    "Verwerker_Postcode",
+    "Verwerker_Straat",
+    "Verwerker_Plaats",
+    "Verwerker_Huisnr"
 ]
+
+
+# # Afgiftemeldingen
+# roles = [
+#     "Ontdoener",
+#     "EerstAfnemer",
+#     # "Verwerker"
+# ]
+#
+# connect_nace = "EerstAfnemer"
+#
+# LMA_columns = [
+#     "Verwerkersnummer",
+#     "GangbareNaam",
+#     # Verwerker
+#     # "Verwerker_Straat",
+#     # "Verwerker_Huisnummer",
+#     # "Verwerker_Postcode",
+#     # "Verwerker_Plaats",
+#     # Ontdoener
+#     "Ontdoener_Bedrijfsnr",
+#     "Ontdoener",
+#     "Ontdoener_Straat",
+#     "Ontdoener_Huisnr",
+#     "Ontdoener_Postcode",
+#     "Ontdoener_Plaats",
+#     "Ontdoener_Land",
+#     # EerstAfnemer
+#     "EerstAfnemer_Bedrijfsnr",
+#     "EerstAfnemer",
+#     "EerstAfnemer_Straat",
+#     "EerstAfnemer_Huisnr",
+#     "EerstAfnemer_Postcode",
+#     "EerstAfnemer_Plaats",
+#     "EerstAfnemer_Land",
+#     "VerwerkingsmethodeCode",
+#     "VerwerkingsOmschrijving",
+#     "EuralCode",
+#     "EuralcodeOmschrijving",
+#     "MeldPeriodeJAAR",
+#     "MeldPeriodeMAAND",
+#     "Gewicht_KG",
+#     "Aantal_vrachten"
+# ]

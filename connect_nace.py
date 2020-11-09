@@ -175,7 +175,7 @@ def match_by_geo_proximity(remaining, distances):
     """
     remaining.drop_duplicates(subset=["Key"], inplace=True)
 
-    distances = distances[distances.index.isin(remaining.index)]
+    distances = distances[distances["Key"].isin(remaining["Key"])]
 
     closest = distances.groupby(["Key"])["dist"].idxmin()
     matched_by_geo_proximity = pd.merge(remaining[["Key"]], distances.loc[closest], on="Key")
@@ -239,7 +239,7 @@ def run(dataframe):
     # extract ontdoeners from LMA dataset to connect NACE
     # all other roles have predefined NACE codes
     connect_nace = var.connect_nace
-    logging.info("Extract {connect_nace}s...")
+    logging.info(f"Extract {connect_nace}s...")
     ontdoener_columns = [col for col in dataframe.columns if connect_nace in col]
     ontdoener_columns.append('EuralCode')
     ontdoeners = dataframe[ontdoener_columns]
