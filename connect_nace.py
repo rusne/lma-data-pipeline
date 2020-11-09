@@ -238,12 +238,13 @@ def run(dataframe):
 
     # extract ontdoeners from LMA dataset to connect NACE
     # all other roles have predefined NACE codes
-    logging.info("Extract ontdoeners...")
-    ontdoener_columns = [col for col in dataframe.columns if "Ontdoener" in col]
+    connect_nace = var.connect_nace
+    logging.info("Extract {connect_nace}s...")
+    ontdoener_columns = [col for col in dataframe.columns if connect_nace in col]
     ontdoener_columns.append('EuralCode')
     ontdoeners = dataframe[ontdoener_columns]
     ontdoeners.columns = [col.split("_")[-1] for col in ontdoener_columns]
-    ontdoeners = ontdoeners.rename(columns={"Ontdoener": "Name"})
+    ontdoeners = ontdoeners.rename(columns={connect_nace: "Name"})
     # logging.info(f"Original ontdoeners: {len(ontdoeners.index)}")
 
     # prepare key to match with KvK dataset (clean name + postcode)
@@ -257,12 +258,12 @@ def run(dataframe):
     # remove any ontdoeners with no location
     missing_locations = ontdoeners[ontdoeners["Location"].isnull()]
     if len(missing_locations.index):
-        logging.warning(f"Remove {len(missing_locations.index)} ontdoeners with missing locations...")
+        logging.warning(f"Remove {len(missing_locations.index)} {connect_nace}s with missing locations...")
         ontdoeners.dropna(subset=["Location"], inplace=True)
 
     # after filtering missing locations, add route info again
     ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"] + " route"
-    logging.info(f"{ontdoeners['Key'].nunique()} unique ontdoeners to connect NACE...")
+    logging.info(f"{ontdoeners['Key'].nunique()} unique {connect_nace}s to connect NACE...")
 
     # convert WKT to geometry
     ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
@@ -298,7 +299,7 @@ def run(dataframe):
 
     output_by_name_address = match_by_name_and_address(LMA_inbound)
     perc = round(len(output_by_name_address.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_by_name_address.index)} ontdoeners matched by name & postcode ({perc}%)")
+    logging.warning(f"{len(output_by_name_address.index)} {connect_nace}s matched by name & postcode ({perc}%)")
 
     # take out those ontdoeners that had not been matched
     remaining = LMA_inbound[(LMA_inbound["Key"].isin(output_by_name_address["Key"]) == False)]
@@ -310,7 +311,7 @@ def run(dataframe):
 
     output_by_name = match_by_name(remaining)
     perc = round(len(output_by_name.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_by_name.index)} ontdoeners matched only by name ({perc}%)")
+    logging.warning(f"{len(output_by_name.index)} {connect_nace}s matched only by name ({perc}%)")
 
     # take out those Ontdoeners that had not been matched
     remaining = remaining[(remaining["Key"].isin(output_by_name["Key"]) == False)]
@@ -321,7 +322,7 @@ def run(dataframe):
 
     output_by_address = match_by_address(remaining)
     perc = round(len(output_by_address.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_by_address.index)} ontdoeners matched only by address ({perc}%)")
+    logging.warning(f"{len(output_by_address.index)} {connect_nace}s matched only by address ({perc}%)")
 
     # take out those actors that had not been matched
     remaining = remaining[(remaining["Key"].isin(output_by_address["Key"]) == False)]
@@ -333,7 +334,7 @@ def run(dataframe):
 
     output_by_text_proximity, distances = match_by_text_proximity(remaining)
     perc = round(len(output_by_text_proximity.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_by_text_proximity.index)} ontdoeners matched with the closest name match "
+    logging.warning(f"{len(output_by_text_proximity.index)} {connect_nace} matched with the closest name match "
                     f"in <{var.buffer_dist}m ({perc}%)")
 
     # take out those actors that had not been matched
@@ -345,7 +346,7 @@ def run(dataframe):
 
     output_by_geo_proximity = match_by_geo_proximity(remaining, distances)
     perc = round(len(output_by_geo_proximity.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_by_geo_proximity.index)} ontdoeners matched by proximity ({perc}%)")
+    logging.warning(f"{len(output_by_geo_proximity.index)} {connect_nace}s matched by proximity ({perc}%)")
 
     # take out those actors that had not been matched
     remaining = remaining[(remaining["Key"].isin(output_by_geo_proximity["Key"]) == False)]
@@ -367,7 +368,7 @@ def run(dataframe):
     output_unmatched["how"] = "unmatched"
 
     perc = round(len(output_unmatched.index) / float(total_inbound) * 100, 2)
-    logging.warning(f"{len(output_unmatched.index)} ontdoeners unmatched ({perc}%)")
+    logging.warning(f"{len(output_unmatched.index)} {connect_nace}s unmatched ({perc}%)")
 
     all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
                          output_by_text_proximity, output_by_geo_proximity, output_unmatched])

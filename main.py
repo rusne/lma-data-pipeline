@@ -1,6 +1,5 @@
 import logging
 import pandas as pd
-import pytest
 
 import filtering
 import clean
@@ -28,6 +27,7 @@ if __name__ == "__main__":
     try:
         dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
         # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
+        dataframe = pd.read_csv("Private_data/afgiftemeldingen.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
         if type(error) == FileNotFoundError:
