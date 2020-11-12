@@ -258,7 +258,7 @@ def run(dataframe):
     # remove any ontdoeners with no location
     missing_locations = ontdoeners[ontdoeners["Location"].isnull()]
     if len(missing_locations.index):
-        logging.warning(f"Remove {len(missing_locations.index)} {connect_nace}s with missing locations...")
+        logging.warning(f"{len(missing_locations.index)} {connect_nace}s with missing locations removed...")
         ontdoeners.dropna(subset=["Location"], inplace=True)
 
     # after filtering missing locations, add route info again

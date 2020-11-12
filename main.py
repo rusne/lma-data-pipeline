@@ -25,9 +25,9 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
-        dataframe = dataframe[:200000]
+        dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
+        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
+        # dataframe = dataframe[:200000]
         # dataframe = pd.read_csv("Private_data/afgiftemeldingen.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
@@ -41,7 +41,12 @@ if __name__ == "__main__":
 
     # filter
     logging.info("FILTER DATASET...")
-    filtered_dataframe = filtering.run(dataframe)
+    filtered_dataframe, removals = filtering.run(dataframe)
+    try:
+        assert len(filtered_dataframe.index) + removals == len(dataframe.index)
+    except AssertionError:
+        logging.critical("Mismatch on number of lines!")
+        raise
     logging.info("FILTER COMPLETE!\n")
 
     # clean
@@ -50,23 +55,33 @@ if __name__ == "__main__":
     try:
         assert len(cleaned_dataframe.index) == len(filtered_dataframe.index)
     except AssertionError:
-        logging.critical('Dataset size changed!')
+        logging.critical("Mismatch on number of lines!")
         raise
     logging.info("CLEAN COMPLETE!\n")
 
     # connect nace
     logging.info("CONNECT NACE TO DATASET...")
     connected_dataframe = connect_nace.run(cleaned_dataframe)
+    try:
+        assert len(connected_dataframe.index) == len(cleaned_dataframe.index)
+    except AssertionError:
+        logging.critical("Mismatch on number of lines!")
+        raise
     logging.info("CONNECT NACE COMPLETE!\n")
 
     # # classify
-    # logging.info("CLASSIFY DATASET...")
-    # classified_dataframe = classify.run(connected_dataframe)
-    # logging.info("CLASSIFY COMPLETE!\n")
-    #
-    # # end pipeline
-    # logging.info("PIPELINE COMPLETE!")
-    # classified_dataframe.to_excel("Private_data/results.xlsx")
+    logging.info("CLASSIFY DATASET...")
+    classified_dataframe = classify.run(connected_dataframe)
+    try:
+        assert len(classified_dataframe.index) == len(connected_dataframe.index)
+    except AssertionError:
+        logging.critical("Mismatch on number of lines!")
+        raise
+    logging.info("CLASSIFY COMPLETE!\n")
+
+    # end pipeline
+    logging.info("PIPELINE COMPLETE!")
+    classified_dataframe.to_excel("Private_data/results.xlsx")
 
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")
