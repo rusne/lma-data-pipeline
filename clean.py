@@ -118,7 +118,8 @@ def run(dataframe):
         dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
     # load geolocations (TO BE REMOVED IN THE FINAL VERSION)
-    geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)
+    # geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)
+    geo = pd.read_csv("Private_data/mapbox.csv", low_memory=False, sep='\t')
 
     geo["straat"] = geo["straat"].astype("str")
     geo["straat"] = geo["straat"].apply(clean_address)
@@ -175,9 +176,10 @@ def run(dataframe):
         addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
 
         addresses.index = dataframe.index  # keep original index
-        addresses.loc[addresses["x"].isnull(), "x"] = 0
-        addresses.loc[addresses["y"].isnull(), "y"] = 0
-        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init": "epsg:28992"})
+        # addresses.loc[addresses["x"].isnull(), "x"] = 0
+        # addresses.loc[addresses["y"].isnull(), "y"] = 0
+        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init":"epsg:4326"})
+        locations = locations.to_crs("epsg:28992")
         dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
 
         # # geolocate (FINAL VERSION)

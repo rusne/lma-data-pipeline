@@ -207,7 +207,7 @@ def run(dataframe):
     try:
         global KvK_actors
         KvK_actors = pd.read_csv("Private_data/all_KvK.csv", low_memory=False)
-        KvK_actors['activenq'] = KvK_actors['activenq'].astype(str).str[:4]
+        KvK_actors['activenq'] = KvK_actors['activenq'].astype(str).str.zfill(4).str[:4]
     except Exception as error:
         logging.critical(error)
         raise
@@ -218,7 +218,7 @@ def run(dataframe):
     try:
         global nace_ewc
         nace_ewc = pd.read_csv("Private_data/NACE-EWC.csv", low_memory=False)
-        nace_ewc['activenq'] = nace_ewc['activenq'].astype(str)
+        nace_ewc['activenq'] = nace_ewc['activenq'].astype(str).str.zfill(4)
     except Exception as error:
         logging.critical(error)
 
@@ -263,7 +263,8 @@ def run(dataframe):
 
     # after filtering missing locations, add route info again
     ontdoeners.loc[ontdoeners["route"] == "J", "Key"] = ontdoeners["Key"] + " route"
-    logging.info(f"{ontdoeners['Key'].nunique()} unique {connect_nace}s to connect NACE...")
+    total_inbound = ontdoeners['Key'].nunique()
+    logging.info(f"{total_inbound} unique {connect_nace}s to connect NACE...")
 
     # convert WKT to geometry
     ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
@@ -289,8 +290,8 @@ def run(dataframe):
     LMA_inbound = LMA_inbound[LMA_inbound["route"] != "J"]
     LMA_inbound.drop(columns=["route"])
 
-    total_inbound = LMA_inbound["Key"].nunique()
-    # logging.info(f"Unique ontdoeners for matching: {total_inbound}")
+    # total_inbound = LMA_inbound["Key"].nunique()
+    logging.info(f"Ontdoeners within AMA: {LMA_inbound['Key'].nunique()}")
 
     # ______________________________________________________________________________
     # 1. BY NAME AND ADDRESS
@@ -377,7 +378,9 @@ def run(dataframe):
     original_index = ontdoeners.index
     ontdoeners = pd.merge(ontdoeners, all_nace, how="left", on="Key")
     ontdoeners.index = original_index
-    dataframe["Ontdoener_NACE"] = ontdoeners["AG"].str.cat(ontdoeners["activenq"].astype(str).str[:4], sep="-")
+    dataframe[f"{connect_nace}_AG"] = ontdoeners["AG"]
+    dataframe[f"{connect_nace}_activenq"] = ontdoeners["activenq"]
+    dataframe[f"{connect_nace}_NACE"] = ontdoeners["AG"].str.cat(ontdoeners["activenq"].astype(str).str[:4], sep="-")
 
     # ______________________________________________________________________________
     # ______________________________________________________________________________
@@ -386,7 +389,6 @@ def run(dataframe):
     # ______________________________________________________________________________
 
     map_roles = var.roles.copy()
-    map_roles.remove("Ontdoener")
     dummy_nace = var.dummy_nace.copy()
 
     for role in map_roles:

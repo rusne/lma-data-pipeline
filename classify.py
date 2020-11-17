@@ -1,8 +1,11 @@
 import logging
 import pandas as pd
+import variables as var
 
 
 def run(dataframe):
+    connect_nace = var.connect_nace
+
     # ------------------------------------------------------------------------------
     # NACE - VALUE CHAIN
     # ------------------------------------------------------------------------------
@@ -12,9 +15,9 @@ def run(dataframe):
     # read NACE-EWC validation file
     value_chains = pd.read_csv('Private_data/NACE_valuechains.csv', low_memory=False)
     value_chains = value_chains[['Code', 'Value chain (Based on AG code)']]
-    value_chains.columns = ['Ontdoener_NACE', 'Value_chain']
+    value_chains.columns = [f'{connect_nace}_NACE', 'Value_chain']
 
-    dataframe = pd.merge(dataframe, value_chains, how='left', on='Ontdoener_NACE').set_axis(dataframe.index)
+    dataframe = pd.merge(dataframe, value_chains, how='left', on=f'{connect_nace}_NACE').set_axis(dataframe.index)
 
     # ------------------------------------------------------------------------------
     # EURAL CODE - CHAIN POSITION

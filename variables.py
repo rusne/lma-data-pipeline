@@ -57,43 +57,32 @@ LMA_columns = [
 
 # # Afgiftemeldingen
 # roles = [
-#     "Ontdoener",
+#     # "Ontdoener",
 #     "EerstAfnemer",
-#     # "Verwerker"
+#     "Verwerker"
 # ]
 #
 # connect_nace = "EerstAfnemer"
 #
 # LMA_columns = [
-#     "Verwerkersnummer",
-#     "GangbareNaam",
-#     # Verwerker
-#     # "Verwerker_Straat",
-#     # "Verwerker_Huisnummer",
-#     # "Verwerker_Postcode",
-#     # "Verwerker_Plaats",
-#     # Ontdoener
-#     "Ontdoener_Bedrijfsnr",
-#     "Ontdoener",
-#     "Ontdoener_Straat",
-#     "Ontdoener_Huisnr",
-#     "Ontdoener_Postcode",
-#     "Ontdoener_Plaats",
-#     "Ontdoener_Land",
-#     # EerstAfnemer
-#     "EerstAfnemer_Bedrijfsnr",
-#     "EerstAfnemer",
-#     "EerstAfnemer_Straat",
-#     "EerstAfnemer_Huisnr",
-#     "EerstAfnemer_Postcode",
-#     "EerstAfnemer_Plaats",
-#     "EerstAfnemer_Land",
-#     "VerwerkingsmethodeCode",
-#     "VerwerkingsOmschrijving",
-#     "EuralCode",
-#     "EuralcodeOmschrijving",
-#     "MeldPeriodeJAAR",
-#     "MeldPeriodeMAAND",
-#     "Gewicht_KG",
-#     "Aantal_vrachten"
+# "Verwerker",
+# "Verwerker_Straat",
+# "Verwerker_Huisnr",
+# "Verwerker_Postcode",
+# "Verwerker_Plaats",
+# "EerstAfnemer",
+# "EerstAfnemer_Straat",
+# "EerstAfnemer_Huisnr",
+# "EerstAfnemer_Postcode",
+# "EerstAfnemer_Plaats",
+# "EersteAfnemer_Land",
+# "VerwerkingsmethodeCode",
+# "VerwerkingsmethodeOmschrijving",
+# "EuralCode",
+# "BenamingAfval",
+# "GNcode",
+# "MeldPeriodeJAAR",
+# "MeldPeriodeMAAND",
+# "Gewicht_KG",
+# "Aantal_vrachten"
 # ]

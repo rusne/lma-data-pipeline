@@ -25,10 +25,10 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen.csv", low_memory=False)
-        # dataframe = dataframe[:200000]
-        # dataframe = pd.read_csv("Private_data/afgiftemeldingen.csv", low_memory=False)
+        # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
+        dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
+        dataframe = dataframe[:100000]
+        # dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
         if type(error) == FileNotFoundError:
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         raise
     logging.info("CONNECT NACE COMPLETE!\n")
 
-    # # classify
+    # classify
     logging.info("CLASSIFY DATASET...")
     classified_dataframe = classify.run(connected_dataframe)
     try:
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     # end pipeline
     logging.info("PIPELINE COMPLETE!")
-    classified_dataframe.to_excel("Private_data/results.xlsx")
+    classified_dataframe.to_csv("Private_data/results.csv")
 
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")
