@@ -363,8 +363,9 @@ def run(dataframe):
 
     # if any of they keywords appear in the company name, then these companies need to get
     # NACE W 0003
-    governmental = remaining[]
-
+    governmental = remaining[remaining['Name'].str.contains('|'.join(keywords))]
+    governmental["AG"], governmental["activenq"] = ["W", "0003"]
+    remaining = remaining[(remaining["Key"].isin(governmental["Key"]) == False)]
 
     # ______________________________________________________________________________
     # 6. UNMATCHED
@@ -386,7 +387,7 @@ def run(dataframe):
     logging.warning(f"{len(output_unmatched.index)} {connect_nace}s unmatched ({perc}%)")
 
     all_nace = pd.concat([output_by_name_address, output_by_name, output_by_address,
-                         output_by_text_proximity, output_by_geo_proximity, output_unmatched])
+                          output_by_text_proximity, output_by_geo_proximity, governmental, output_unmatched])
     all_nace.drop_duplicates(subset=["Key"], inplace=True)
 
     original_index = ontdoeners.index
