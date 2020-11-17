@@ -25,9 +25,9 @@ def run(dataframe):
 
     logging.info(f"Add chain position based on EWC code...")
 
-    chain_positions = pd.read_csv('Private_data/EURAL_classification_v1.2_EN.csv', low_memory=False)
-    chain_positions = chain_positions[['Chain position', 'Euralcode']]
-    chain_positions.columns = ['Chain_position', 'EuralCode']
+    chain_positions = pd.read_csv('Private_data/EURAL_classification_v1.5_NL.csv', low_memory=False)
+    chain_positions = chain_positions[['Transitieagenda_indicatief', 'EURAL_6_cijfer_code']]
+    chain_positions.columns = ['Transitieagenda', 'EuralCode']
     chain_positions['EuralCode'] = chain_positions['EuralCode'].str.replace(' ', '').str.replace('*', '')
 
     dataframe["EuralCode"] = dataframe["EuralCode"].astype(str).str.zfill(6)
