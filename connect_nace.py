@@ -353,10 +353,24 @@ def run(dataframe):
     remaining = remaining[(remaining["Key"].isin(output_by_geo_proximity["Key"]) == False)]
 
     # ______________________________________________________________________________
-    # 5. UNMATCHED
+    # 5. BY KEYWORD
+    # ______________________________________________________________________________
+
+    # governmental activities
+    keywords = ['GEMEENTE', 'POLITIE', 'RIJKSWATERSTAAT', 'HOGESCHOOL', 'STADSDEEL',
+                'BELASTINGDIENST', 'PROVINCIE', 'OPENBARE', 'UNIE', 'UNIVERSITEIT',
+                'RAADHUIS', 'WATERSCHAP']
+
+    # if any of they keywords appear in the company name, then these companies need to get
+    # NACE W 0003
+    governmental = remaining[]
+
+
+    # ______________________________________________________________________________
+    # 6. UNMATCHED
     #    dummy NACE code for:
     #    A) unmatched points
-    #    B) points outside the LISA boundary also get a dummy code
+    #    B) points outside the AMA boundary also get a dummy code
     #    C) route points
     # ______________________________________________________________________________
 
