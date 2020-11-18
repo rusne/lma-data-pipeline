@@ -130,6 +130,9 @@ def run(dataframe):
     geo["postcode"] = geo["postcode"].astype("str")
     geo["postcode"] = geo["postcode"].apply(clean_postcode)
 
+    geo["land"] = geo["land"].astype("str")
+    geo["land"] = geo["land"].apply(clean_address)
+
     geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode"]], sep=" ")
     geo.drop_duplicates(subset=['adres'], inplace=True)
 
@@ -144,6 +147,7 @@ def run(dataframe):
         huisnr = f"{role}_Huisnr"
         postcode = f"{role}_Postcode"
         plaats = f"{role}_Plaats"
+        land = f"{role}_Land"
 
         # clean company name
         # note: Herkomst does not have name!
@@ -169,6 +173,10 @@ def run(dataframe):
         dataframe[plaats] = dataframe[plaats].astype("str")
         dataframe[plaats] = dataframe[plaats].apply(clean_address)
 
+        # clean country name
+        dataframe[land] = dataframe[land].astype("str")
+        dataframe[land] = dataframe[land].apply(clean_address)
+
         # prepare address for geolocation
         dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode]], sep=" ")
 
@@ -176,16 +184,16 @@ def run(dataframe):
         addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
 
         addresses.index = dataframe.index  # keep original index
-        # addresses.loc[addresses["x"].isnull(), "x"] = 0
-        # addresses.loc[addresses["y"].isnull(), "y"] = 0
+        # # addresses.loc[addresses["x"].isnull(), "x"] = 0
+        # # addresses.loc[addresses["y"].isnull(), "y"] = 0
         locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init":"epsg:4326"})
         locations = locations.to_crs("epsg:28992")
         dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
 
         # # geolocate (FINAL VERSION)
         # logging.info(f"Geolocate for {role}...")
-        # addresses = dataframe[[f"{role}_Adres", postcode]]
-        # addresses.columns = ["adres", "postcode"]
+        # addresses = dataframe[[f"{role}_Adres", postcode, land]]
+        # addresses.columns = ["adres", "postcode", "land"]
         # dataframe[f"{role}_Location"] = geolocate.run(addresses)
 
     return dataframe

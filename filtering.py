@@ -54,6 +54,9 @@ def run(dataframe):
             orig_col = "Ontdoener_" + col.split("_")[-1]
             LMA.loc[idx, col] = LMA[orig_col]
 
+    if "Verwerker_Land" not in LMA.columns:
+        LMA["Verwerker_Land"] = "Nederland"
+
     # filter empty fields
     # log all empty fields before removing them
     # empty role columns
