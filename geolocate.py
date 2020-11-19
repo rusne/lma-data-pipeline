@@ -89,7 +89,7 @@ def add_wkt(locations):
     countries = countries[countries['country_nl'] != 'NEDERLAND']
     countries.set_crs(epsg=4326, inplace=True)
     countries.to_crs(epsg=28992, inplace=True)
-    countries["centroid"] = districts.geometry.centroid
+    countries["centroid"] = countries.geometry.centroid
 
     # merge locations with countries on geometry
     # point in polygon (with spatial indexes)
