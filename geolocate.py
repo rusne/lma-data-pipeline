@@ -79,6 +79,29 @@ def add_wkt(locations):
     # assign district centroid as location
     country_in.loc[condition, "geometry"] = merge_code["centroid"]
 
+    # check for null geometries
+    null_geom = country_in.geometry.isnull()
+    if null_geom.any():
+        # assign null locations to municipalities
+        matched = country_in[~null_geom]
+        unmatched = country_in[null_geom]
+
+        # load municipality centroids
+        munis = gpd.read_file("Spatial_data/All_Gemeente_centroids_WGS84.shp")
+        munis.set_crs(epsg=4326, inplace=True)
+        munis.to_crs(epsg=28992, inplace=True)
+
+        # load municipality cities
+        cities = pd.read_excel('Spatial_data/citiesNL.xlsx')
+
+        # merge unmatched with municipality centroids
+        unmatched.drop(columns=['geometry'], inplace=True)
+        unmatched = pd.merge(unmatched, cities, how='left', left_on='plaats', right_on='Woonplaats').set_axis(unmatched.index)
+        unmatched = pd.merge(unmatched, munis, how='left', left_on='Gemeente', right_on='GM_NAAM').set_axis(unmatched.index)
+        unmatched = gpd.GeoDataFrame(unmatched, geometry='geometry', crs={"init":"epsg:4326"})
+
+        country_in = pd.concat([matched, unmatched]).sort_index()
+
     # ------------------------------------------------------
     # OUT COUNTRY
     # ------------------------------------------------------

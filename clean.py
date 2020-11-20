@@ -111,6 +111,8 @@ def run(dataframe):
     :param dataframe: dataframe filtered from erroneous entries
     :return: dataframe with formatted role info & geolocation
     """
+    removals = 0
+
     # clean the BenamingAfval column (waste descriptions)
     if "BenamingAfval" in dataframe.columns:
         logging.info("Clean descriptions (BenamingAfval)...")
@@ -157,6 +159,14 @@ def run(dataframe):
             dataframe[role] = dataframe[role].astype("str")
             dataframe[role] = dataframe[role].apply(clean_company_name)
 
+            # delete flow if role name is missing
+            names = dataframe[role].drop_duplicates().sort_values()
+            e = len(dataframe[dataframe[role].str.len() == 0].index)
+            if e:
+                removals += e
+                dataframe = dataframe[dataframe[role].str.len() > 0]
+                logging.warning(f"{e} lines without {role} name removed")
+
         # clean street name
         dataframe[straat] = dataframe[straat].astype("str")
         dataframe[straat] = dataframe[straat].apply(clean_address)
@@ -196,4 +206,14 @@ def run(dataframe):
         # addresses.columns = ["adres", "postcode", "land"]
         # dataframe[f"{role}_Location"] = geolocate.run(addresses)
 
-    return dataframe
+        # delete flow if role location is missing
+        e = len(dataframe[dataframe[f"{role}_Location"].isnull()].index)
+        if e:
+            removals += e
+            dataframe = dataframe[dataframe[f"{role}_Location"].notnull()]
+            logging.warning(f"{e} lines without {role} location removed")
+
+    if removals:
+        logging.info(f"{len(dataframe.index)} lines after cleaning")
+
+    return dataframe, removals

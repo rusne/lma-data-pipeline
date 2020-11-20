@@ -1,5 +1,7 @@
 import logging
 import pandas as pd
+from shapely import wkt
+import geopandas as gpd
 
 import filtering
 import clean
@@ -26,9 +28,8 @@ if __name__ == "__main__":
     logging.info("LOAD DATASET...")
     try:
         # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
-        # dataframe = dataframe[:10000]
-        # dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
+        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
+        dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
         if type(error) == FileNotFoundError:
@@ -51,9 +52,9 @@ if __name__ == "__main__":
 
     # clean
     logging.info("CLEAN DATASET...")
-    cleaned_dataframe = clean.run(filtered_dataframe)
+    cleaned_dataframe, removals = clean.run(filtered_dataframe)
     try:
-        assert len(cleaned_dataframe.index) == len(filtered_dataframe.index)
+        assert len(cleaned_dataframe.index) + removals == len(filtered_dataframe.index)
     except AssertionError:
         logging.critical("Mismatch on number of lines!")
         raise
@@ -78,6 +79,14 @@ if __name__ == "__main__":
         logging.critical("Mismatch on number of lines!")
         raise
     logging.info("CLASSIFY COMPLETE!\n")
+
+    # convert to WGS84 to export
+    locations = [col for col in classified_dataframe if 'Location' in col]
+    for location in locations:
+        classified_dataframe[location] = classified_dataframe[location].apply(wkt.loads)
+        gdf = gpd.GeoDataFrame(classified_dataframe, geometry=location, crs={"init": "epsg:28992"})
+        gdf = gdf.to_crs(epsg=4326)
+        classified_dataframe[location] = gdf[gdf.geometry.notnull()].geometry.apply(lambda x: wkt.dumps(x))
 
     # end pipeline
     logging.info("PIPELINE COMPLETE!")
