@@ -1,18 +1,36 @@
+"""
+Copyright (C) 2020  Rusne Sileryte
+Modified based on the original code under the same license available at https://github.com/rusne/geoFluxus
+rusne.sileryte@gmail.com
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+"""
+
 # Reads the original KvK file, filters the relevant columns,
 # unifies NACE codes to 4 or 5 digits,
 # filters out companies without a NACE code,
 # prepares unlocated entries for the geolocation
 
-# TODO filter out all actors that do not belong to the SBI codes that are supposed to produce waste
-
 import pandas as pd
 import logging
-from clean import (clean_company_name,
-                   clean_nace,
-                   clean_address,
-                   clean_postcode,
-                   clean_huisnr)
-import geolocate
+from src.clean import (clean_company_name,
+                       clean_nace,
+                       clean_address,
+                       clean_postcode,
+                       clean_huisnr)
+from src import geolocate
 
 import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
