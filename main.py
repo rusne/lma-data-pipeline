@@ -98,16 +98,19 @@ if __name__ == "__main__":
     logging.info("CLASSIFY COMPLETE!\n")
 
     # convert to WGS84 to export
+    logging.info("CHANGE CRS...")
     locations = [col for col in classified_dataframe if 'Location' in col]
     for location in locations:
-        classified_dataframe[location] = classified_dataframe[location].apply(wkt.loads)
-        gdf = gpd.GeoDataFrame(classified_dataframe, geometry=location, crs={"init": "epsg:28992"})
+        logging.info(f"Change CRS for {location}s...")
+        role_locations = classified_dataframe[location].apply(wkt.loads)
+        gdf = gpd.GeoDataFrame(role_locations, geometry=location, crs={"init": "epsg:28992"})
         gdf = gdf.to_crs(epsg=4326)
         classified_dataframe[location] = gdf[gdf.geometry.notnull()].geometry.apply(lambda x: wkt.dumps(x))
 
     # end pipeline
-    logging.info("PIPELINE COMPLETE!")
+    logging.info("EXPORT RESULT...")
     classified_dataframe.to_csv("Private_data/results.csv")
+    logging.info("PIPELINE COMPLETE!")
 
     # # load KvK dataset
     # logging.info("PREPARE KVK DATASET...")

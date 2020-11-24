@@ -28,6 +28,7 @@ from src import geolocate
 import variables as var
 import pandas as pd
 import geopandas as gpd
+from shapely import wkt
 
 
 def clean_description(desc):
@@ -158,6 +159,14 @@ def run(dataframe):
     geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode"]], sep=" ")
     geo.drop_duplicates(subset=['adres'], inplace=True)
 
+    # load casestudy boundary
+    logging.info("Import casestudy boundary...")
+    try:
+        MRA_boundary = gpd.read_file("Spatial_data/Metropoolregio_RDnew.shp")
+    except Exception as error:
+        logging.critical(error)
+        raise
+
     # clean role columns
     roles = var.roles
     for role in roles:
@@ -214,8 +223,6 @@ def run(dataframe):
         addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
 
         addresses.index = dataframe.index  # keep original index
-        # # addresses.loc[addresses["x"].isnull(), "x"] = 0
-        # # addresses.loc[addresses["y"].isnull(), "y"] = 0
         locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init":"epsg:4326"})
         locations = locations.to_crs("epsg:28992")
         dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
@@ -232,6 +239,15 @@ def run(dataframe):
             removals += e
             dataframe = dataframe[dataframe[f"{role}_Location"].notnull()]
             logging.warning(f"{e} lines without {role} location removed")
+
+        # tag role locations as in & out AMA
+        role_locations = dataframe[f"{role}_Location"].apply(wkt.loads)
+        LMAgdf = gpd.GeoDataFrame(role_locations, geometry=f"{role}_Location", crs={"init": "epsg:28992"})
+        joined = gpd.sjoin(LMAgdf, MRA_boundary, how="left", op="within")
+        in_boundary = joined[joined["OBJECTID"].isna() == False].index
+        out_boundary = joined[joined["OBJECTID"].isna()].index
+        dataframe.loc[in_boundary, f"{role}_in_AMA"] = True
+        dataframe.loc[out_boundary, f"{role}_in_AMA"] = False
 
     if removals:
         logging.info(f"{len(dataframe.index)} lines after cleaning")

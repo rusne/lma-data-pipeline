@@ -247,15 +247,6 @@ def run(dataframe):
     nace = nace_ewc['activenq'].drop_duplicates()
     KvK_actors = pd.merge(KvK_actors, nace, on='activenq')
 
-    # load casestudy boundary
-    # connect with KvK dataset only ontdoeners within the casestudy boundary
-    logging.info("Import casestudy boundary...")
-    try:
-        MRA_boundary = gpd.read_file("Spatial_data/Metropoolregio_RDnew.shp")
-    except Exception as error:
-        logging.critical(error)
-        raise
-
     # extract ontdoeners from LMA dataset to connect NACE
     # all other roles have predefined NACE codes
     connect_nace = var.connect_nace
@@ -286,21 +277,12 @@ def run(dataframe):
     total_inbound = ontdoeners['Key'].nunique()
     logging.info(f"{total_inbound} unique {connect_nace}s to connect NACE...")
 
-    # convert WKT to geometry
-    ontdoeners["Location"] = ontdoeners["Location"].apply(wkt.loads)
-    LMAgdf = gpd.GeoDataFrame(ontdoeners, geometry="Location", crs={"init": "epsg:28992"})
-
-    # check which ontdoeners are within the casestudy area
-    joined = gpd.sjoin(LMAgdf, MRA_boundary, how="left", op="within")
-    in_boundary = joined[joined["OBJECTID"].isna() == False]
-    out_boundary = joined[joined["OBJECTID"].isna()]
-
-    # logging.info(f"{in_boundary["key"].nunique()} ontdoeners are inside the casestudy area")
-    # if len(out_boundary.index):
-    #     logging.warning(f"Remove {out_boundary['Key'].nunique()} ontdoeners outside the casestudy area")
-
     # further matching only happens for the actors inside the boundary
+    in_boundary = ontdoeners[ontdoeners["AMA"] == True]
+    out_boundary = ontdoeners[ontdoeners["AMA"] == False]
     LMA_inbound = in_boundary[ontdoeners.columns]
+    LMA_inbound["Location"] = LMA_inbound["Location"].apply(wkt.loads)
+    LMA_inbound = gpd.GeoDataFrame(LMA_inbound, geometry="Location", crs={"init": "epsg:28992"})
 
     # route inzameling gets a separate nace code as well
     route = LMA_inbound[LMA_inbound["route"] == "J"]
