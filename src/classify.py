@@ -48,7 +48,7 @@ def run(dataframe):
 
     logging.info(f"Add transition agenda based on EWC code...")
 
-    transition_agendas = pd.read_csv('Private_data/EURAL_classification_v1.6_NL.csv', low_memory=False)
+    transition_agendas = pd.read_csv('Private_data/EURAL_classification_v1.7_NL.csv', low_memory=False)
     transition_agendas.dropna(how='all', axis='columns', inplace=True)
     transition_agendas.columns = [f'EURAL_{col}' for col in transition_agendas.columns]
     transition_agendas['EURAL_EURAL_6_cijfer_code'] = transition_agendas['EURAL_EURAL_6_cijfer_code'].str.replace(' ', '').str.replace('*', '')
@@ -65,7 +65,7 @@ def run(dataframe):
     if "GNcode" in dataframe.columns:
         logging.info(f"Add transition agenda based on GN code...")
 
-        transition_agendas = pd.read_csv('Private_data/CN_Transitieagenda_v1.1.csv', low_memory=False)
+        transition_agendas = pd.read_csv('Private_data/CN_Transitieagenda_v1.2.csv', low_memory=False)
         transition_agendas.dropna(how='all', axis='columns', inplace=True)
         transition_agendas.columns = [f'GN_{col}' for col in transition_agendas.columns]
         transition_agendas = transition_agendas[transition_agendas['GN_CN_LMA'].notnull()]
@@ -77,6 +77,18 @@ def run(dataframe):
 
         no_agenda.append(dataframe['GN_Transitieagenda_NL'].isnull())
 
-    dataframe.loc[np.logical_and.reduce(no_agenda), 'EURAL_Transitieagenda_indicatief'] = "non-specifiek"
+    unclassified = [
+        "EURAL_Gevaarlijk?",
+        "EURAL_Ketenpositie",
+        "EURAL_(a)biotisch",
+        "EURAL_(an)organisch",
+        "EURAL_Tags_algemeen",
+        "EURAL_Transitieagenda_indicatief",
+        "EURAL_Tags_industrie",
+        "EURAL_Tags_type_code",
+        "EURAL_schoon/vervuild",
+        "EURAL_gemengd/puur"
+    ]
+    dataframe.loc[np.logical_and.reduce(no_agenda), unclassified] = "ongeclassificeerd"
 
     return dataframe

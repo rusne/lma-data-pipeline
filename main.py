@@ -23,8 +23,7 @@ import pandas as pd
 from shapely import wkt
 import geopandas as gpd
 
-from src import classify, clean, connect_nace, filtering
-# import prepare_kvk
+from src import classify, clean, connect_nace, filtering, prepare_kvk
 
 import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -44,9 +43,8 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
-        dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
+        dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
+        # dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
         if type(error) == FileNotFoundError:
