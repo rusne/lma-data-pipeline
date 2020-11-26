@@ -1,0 +1,6 @@
+Private_data/
+Public_data/
+.idea
+venv
+__pycache__
+full_logs.log
