@@ -140,25 +140,6 @@ def run(dataframe):
         dataframe["BenamingAfval"] = dataframe["BenamingAfval"].astype("unicode")
         dataframe["BenamingAfval"] = dataframe["BenamingAfval"].apply(clean_description)
 
-    # load geolocations (TO BE REMOVED IN THE FINAL VERSION)
-    # geo = pd.read_csv("Private_data/geolocations.csv", low_memory=False)
-    geo = pd.read_csv("Private_data/mapbox.csv", low_memory=False, sep='\t')
-
-    geo["straat"] = geo["straat"].astype("str")
-    geo["straat"] = geo["straat"].apply(clean_address)
-
-    geo["huisnr"] = geo["huisnr"].astype("str")
-    geo["huisnr"] = geo["huisnr"].apply(clean_huisnr)
-
-    geo["postcode"] = geo["postcode"].astype("str")
-    geo["postcode"] = geo["postcode"].apply(clean_postcode)
-
-    geo["land"] = geo["land"].astype("str")
-    geo["land"] = geo["land"].apply(clean_address)
-
-    geo["adres"] = geo["straat"].str.cat(geo[["huisnr", "postcode"]], sep=" ")
-    geo.drop_duplicates(subset=['adres'], inplace=True)
-
     # load casestudy boundary
     logging.info("Import casestudy boundary...")
     try:
@@ -219,19 +200,11 @@ def run(dataframe):
         # prepare address for geolocation
         dataframe[f"{role}_Adres"] = dataframe[straat].str.cat(dataframe[[huisnr, postcode]], sep=" ")
 
-        # geolocate (TO BE REMOVED IN THE FINAL VERSION)
-        addresses = pd.merge(dataframe[f"{role}_Adres"], geo, how='left', left_on=f"{role}_Adres", right_on="adres")
-
-        addresses.index = dataframe.index  # keep original index
-        locations = gpd.GeoDataFrame(addresses, geometry=gpd.points_from_xy(addresses.x, addresses.y), crs={"init":"epsg:4326"})
-        locations = locations.to_crs("epsg:28992")
-        dataframe[f"{role}_Location"] = geolocate.add_wkt(locations)
-
-        # # geolocate (FINAL VERSION)
-        # logging.info(f"Geolocate for {role}...")
-        # addresses = dataframe[[f"{role}_Adres", postcode, land]]
-        # addresses.columns = ["adres", "postcode", "land"]
-        # dataframe[f"{role}_Location"] = geolocate.run(addresses)
+        # geolocate
+        logging.info(f"Geolocate for {role}...")
+        addresses = dataframe[[f"{role}_Adres", postcode, land]]
+        addresses.columns = ["adres", "postcode", "land"]
+        dataframe[f"{role}_Location"] = geolocate.run(addresses)
 
         # delete flow if role location is missing
         e = len(dataframe[dataframe[f"{role}_Location"].isnull()].index)
