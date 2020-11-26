@@ -1,0 +1,51 @@
+1.	The data has been filtered on ontdoener location instead of herkomst, while herkomst is where the waste has been disposed. Does that mean we miss data from the companies that are not registered in Amsterdam but produce waste in Amsterdam? (Here it might help to know more about the schema of the LMA data and what query has produced the files that we received.)
+
+Locatie van herkomst: ontdoener
+Also data sets for other filters to find out waste that is processed in Amsterdam, for example, and include the query so we have more insight into what is in the data.
+
+
+2.	Does household waste ever end up in LMA data as e.g. secondary waste?
+
+
+
+
+3.	What do the other roles do in the waste chain? We would like to have or be able to formulate a definition of: Ontdoener → Herkomst → Afzender → Inzamelaar → Bemiddelaar → Handelaar → Ontvanger → Verwerker
+
+Most important: ontdoener (houder van het afval; ownership; company that is removing the road), afzender (opdracht tot transport; opdrachtgever), ontvanger/verwerker (process waste)
+
+All important responsibilities are for the ontdoener. They can choose where to send the waste to. You could get confused if you use the afzender, focus on the ontdoener. Afzender is not as accurate as the ontdoener.
+
+Inzamelaar: Renewi takes waste of café and 25 other locations: combine waste in transportation unit. Register in route inzameling: combine small parts of waste in one shipment. Then location of origin is not mentioned in LMA. In this case the ontdoener is the same as the inzamelaar. Oil waste from a garage company doesn't have inzamelaar, because it just goes from A to B. (route inzameling, inzamelingsregeling)
+Route inzameling: drive dozens of kms for waste, so not necessarily in Amsterdam.
+
+Bemiddelaar (broker, verwerker is not aware who the ontdoener is)/handelaar: both not used very often, also not used correctly. Advice: totally ignore.
+All companies that can be brokers, collections, handelaar, transport companies: https://www.niwo.nl/
+
+Ontvanger (store) & verwerker (incinerate) is the same. Final location of that shipment.
+
+
+4.	How do we make sure that LMA data always comes in the same structure (e.g. same column names, same sheet names, etc.)?
+
+Given us a data set. Tjerk will make sure the data set is extended, because we want more information about location of origin and actual ontvanger/verwerker. Then we have to use the correct filters ourselves.
+Always run the same query.
+Give entire AMICE dataset to TU Delft (or the municipality)?
+We provide column names to Tjerk.
+
+
+5.	What can/should we do with the afgiftemeldingen?
+
+AEB is incenerating waste, they are the receiver, do a ontvangstmelding for the municipal waste they have received. After inceration there are ashes, these are shipped to a company that also has to report to LMA. The second receiver is using location of origin: AEB, this is the responsibility of the second company. If the ashes are used as road foundation, and given to a company that doesn't have to report to the LMA, you have to do an afgiftemelding. Afvalstroomnummer changes because it starts with the first five digits of the specific receiver of the waste. AEB->Shortiva = ontvangstmelding; Shortiva->Constrution = afgiftemelding (no afvalstroomnummer), then always from a company that is also doing ontvangstmelding.
+If you receive waste and transform it into not waste, you have to do an afgiftemelding. Then use a CN/GN code, international code to classify elements that are not considered to be waste (grondstoffen). Waste that is not waste anymore. Some companies hate the word waste, use a CN/GN code as soon as possible, not always accurate.
+Website: afval/geen afval; lot of legislation. Distinction is hard to make.
+You can export waste, for example metal to China. The company is China will not report to the LMA. So the Dutch company has to make an afgiftemelding. De eerste afnemer should be mentioned, whose country is China.
+1. Not waste anymore. 2. Going to a company that isn't obliged to report to the LMA. Eerste afnemer is not the company where the shipment ends.
+EVOA: green listed waste can be registered to LMA. Only mentioned in LMA if the ontvangst location is seen as location with a obligation to report to the LMA. Company that only receives metal, receives metal from Germany, not obliged to report to LMA. Plastic uitgezonderd op meldplicht. Exporteren veel naar buitenland. Komt niet in systeem terecht, want NL stroom niet meldplichting. Eventueel vinden in haven of douane.
+
+
+6.	What is the minimum and maximum value that can be reported / transported per vracht & afmelding? Then we can filter out rows with wrong data.
+
+Shipment of waste from England, directly to AEB: thousands of tons. You don't know if it's done by truck or boat. In general: 30 tons maximum (one truckload). No minimum, oil: contract once every week. You only used 3 liters, you're paying the company anyway, so theoretically it's possible. Below 1 kg should be tons.
+
+
+7.	What is the source of the KvK data that you provided earlier?
+
