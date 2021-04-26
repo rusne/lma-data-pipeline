@@ -43,7 +43,8 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
+        dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
+        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
         # dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
@@ -65,6 +66,8 @@ if __name__ == "__main__":
         raise
     logging.info("FILTER COMPLETE!\n")
 
+    filtered_dataframe.to_excel('2_filtered_dataset.xlsx')
+
     # clean
     logging.info("CLEAN DATASET...")
     cleaned_dataframe, removals = clean.run(filtered_dataframe)
@@ -75,41 +78,43 @@ if __name__ == "__main__":
         raise
     logging.info("CLEAN COMPLETE!\n")
 
-    # connect nace
-    logging.info("CONNECT NACE TO DATASET...")
-    connected_dataframe = connect_nace.run(cleaned_dataframe)
-    try:
-        assert len(connected_dataframe.index) == len(cleaned_dataframe.index)
-    except AssertionError:
-        logging.critical("Mismatch on number of lines!")
-        raise
-    logging.info("CONNECT NACE COMPLETE!\n")
+    cleaned_dataframe.to_excel('3_cleaned_dataset.xlsx')
 
-    # classify
-    logging.info("CLASSIFY DATASET...")
-    classified_dataframe = classify.run(connected_dataframe)
-    try:
-        assert len(classified_dataframe.index) == len(connected_dataframe.index)
-    except AssertionError:
-        logging.critical("Mismatch on number of lines!")
-        raise
-    logging.info("CLASSIFY COMPLETE!\n")
-
-    # convert to WGS84 to export
-    logging.info("CHANGE CRS...")
-    locations = [col for col in classified_dataframe if 'Location' in col]
-    for location in locations:
-        logging.info(f"Change CRS for {location}s...")
-        role_locations = classified_dataframe[location].apply(wkt.loads)
-        gdf = gpd.GeoDataFrame(role_locations, geometry=location, crs={"init": "epsg:28992"})
-        gdf = gdf.to_crs(epsg=4326)
-        classified_dataframe[location] = gdf[gdf.geometry.notnull()].geometry.apply(lambda x: wkt.dumps(x))
-
-    # end pipeline
-    logging.info("EXPORT RESULT...")
-    classified_dataframe.to_csv("Private_data/results.csv")
-    logging.info("PIPELINE COMPLETE!")
-
-    # # load KvK dataset
-    # logging.info("PREPARE KVK DATASET...")
-    # dataframe = prepare_kvk.run(dataframe)
+    # # connect nace
+    # logging.info("CONNECT NACE TO DATASET...")
+    # connected_dataframe = connect_nace.run(cleaned_dataframe)
+    # try:
+    #     assert len(connected_dataframe.index) == len(cleaned_dataframe.index)
+    # except AssertionError:
+    #     logging.critical("Mismatch on number of lines!")
+    #     raise
+    # logging.info("CONNECT NACE COMPLETE!\n")
+    #
+    # # classify
+    # logging.info("CLASSIFY DATASET...")
+    # classified_dataframe = classify.run(connected_dataframe)
+    # try:
+    #     assert len(classified_dataframe.index) == len(connected_dataframe.index)
+    # except AssertionError:
+    #     logging.critical("Mismatch on number of lines!")
+    #     raise
+    # logging.info("CLASSIFY COMPLETE!\n")
+    #
+    # # convert to WGS84 to export
+    # logging.info("CHANGE CRS...")
+    # locations = [col for col in classified_dataframe if 'Location' in col]
+    # for location in locations:
+    #     logging.info(f"Change CRS for {location}s...")
+    #     role_locations = classified_dataframe[location].apply(wkt.loads)
+    #     gdf = gpd.GeoDataFrame(role_locations, geometry=location, crs={"init": "epsg:28992"})
+    #     gdf = gdf.to_crs(epsg=4326)
+    #     classified_dataframe[location] = gdf[gdf.geometry.notnull()].geometry.apply(lambda x: wkt.dumps(x))
+    #
+    # # end pipeline
+    # logging.info("EXPORT RESULT...")
+    # classified_dataframe.to_csv("Private_data/results.csv")
+    # logging.info("PIPELINE COMPLETE!")
+    #
+    # # # load KvK dataset
+    # # logging.info("PREPARE KVK DATASET...")
+    # # dataframe = prepare_kvk.run(dataframe)
