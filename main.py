@@ -43,8 +43,8 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
-        # dataframe = pd.read_csv("Private_data/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
+        # dataframe = pd.read_excel("Testing_data/1_full_dataset.xlsx")
+        dataframe = pd.read_csv("Private_data/LMA_data_AMA/ontvangstmeldingen_AMA_2016_2020.csv", low_memory=False)
         # dataframe = pd.read_csv("Private_data/afgiftemeldingen_AMA_2016_2020.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:

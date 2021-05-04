@@ -5,7 +5,8 @@ import logging
 from src import assign_nace
 
 logging.info("Import full LMA dataset...")
-LMA_dataframe = pd.read_excel('Testing_data/3_cleaned_dataset.xlsx')
+# LMA_dataframe = pd.read_excel('Testing_data/3_cleaned_dataset.xlsx')
+LMA_dataframe = pd.read_excel('Private_data/LMA_data_AMA/ontvangstmeldingen_AMA_2018_cleaned.xlsx')
 
 # import KvK dataset with NACE codes
 # NOTE: this dataset is the result of prepare_kvk.py
@@ -13,19 +14,26 @@ logging.info("Import KvK dataset with geolocation...")
 KvK_dataframe = pd.read_csv("Private_data/2018_KvK.csv", low_memory=False)
 
 LMA_actors, KvK_companies = assign_nace.prepare_data(LMA_dataframe, KvK_dataframe)
+# LMA_actors.to_excel('LMA_ontdoeners_AMA_2018.xlsx')
 matched, remaining = assign_nace.exact_match(LMA_actors, KvK_companies)
-search_space = assign_nace.make_search_space(remaining, KvK_companies)
+
 
 # search_space = pd.read_excel('Testing_data/4_search_space.xlsx')
-# control, remaining = assign_nace.probable_match(search_space, geom_loaded=False)
+# control, remaining = assign_nace.probable_match(search_space)
 
-control, remaining = assign_nace.probable_match(search_space, geom_loaded=True)
-
+search_space = assign_nace.make_search_space(remaining, KvK_companies)
+control = assign_nace.probable_match(search_space)
+#
 result = pd.concat([matched, control])
 result = result[['LMA_key', 'LMA_origname', 'LMA_address', 'LMA_eural',
                  'KvK_origname', 'KvK_address', 'KvK_postcode', 'KvK_sbi',
                  'KvK_ag', 'match', 'dist', 'ratio']]
 result.to_excel('result.xlsx')
+
+remaining = LMA_actors[(LMA_actors['LMA_key'].isin(result['LMA_key']) == False)]
+remaining = remaining[['LMA_key', 'LMA_name', 'LMA_origname', 'LMA_address',
+                       'LMA_loc', 'LMA_eural']]
+remaining.drop_duplicates(inplace=True)
 remaining.to_excel('remaining.xlsx')
 
 # assign_nace.validate()

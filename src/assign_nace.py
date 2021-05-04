@@ -120,16 +120,29 @@ def exact_match(LMA_data, KvK_data):
 
     by_name_and_address = pd.merge(LMA_data, KvK_data, left_on="LMA_key", right_on="KvK_key")
     by_name_and_address['match'] = '1'
-    LMA_data = LMA_data[(LMA_data["LMA_key"].isin(by_name_and_address["LMA_key"]) == False)]
+    by_name_and_address = compute_distances(by_name_and_address)
+    by_name_and_address = resolve_duplicates(by_name_and_address)
 
-    by_name = pd.merge(LMA_data, KvK_data, left_on="LMA_name", right_on="KvK_name")
+    logging.warning(f"{len(by_name_and_address.index)} actors matched by exact name and postcode")
+
+    # take out those ontdoeners that had not been matched
+    remaining = LMA_data[(LMA_data["LMA_key"].isin(by_name_and_address["LMA_key"]) == False)]
+    logging.warning(f"{remaining['LMA_key'].nunique()} remaining")
+
+    by_name = pd.merge(remaining, KvK_data, left_on="LMA_name", right_on="KvK_name")
     by_name['match'] = '2'
-    remaining = LMA_data[(LMA_data["LMA_key"].isin(by_name["LMA_key"]) == False)]
+    by_name = compute_distances(by_name)
+    by_name = resolve_duplicates(by_name)
+
+    logging.warning(f"{len(by_name.index)} actors matched by exact name")
+
+    # take out those ontdoeners that had not been matched
+    remaining = remaining[(remaining["LMA_key"].isin(by_name["LMA_key"]) == False)]
+    logging.warning(f"{remaining['LMA_key'].nunique()} remaining")
 
     matched = pd.concat([by_name_and_address, by_name])
 
-    matched = resolve_duplicates(matched)
-
+    print(len(matched.index) + remaining['LMA_key'].nunique())
     return matched, remaining
 
 
@@ -167,7 +180,14 @@ def match(dataframe, l_thresh, g_thresh, step):
     logging.warning(f"{len(matched.index)} actors matched with l-ratio > {l_thresh}, g-dist < {g_thresh}")
 
     # take out those ontdoeners that had not been matched
-    remaining = dataframe[(dataframe.index.isin(matched.index) == False)]
+    remaining = dataframe[(dataframe['LMA_key'].isin(matched['LMA_key']) == False)]
+    logging.warning(f"{remaining['LMA_key'].nunique()} remaining")
+
+    # check if nothing got lost
+    if dataframe['LMA_key'].nunique() != matched['LMA_key'].nunique() + remaining['LMA_key'].nunique():
+        e = dataframe['LMA_key'].nunique() - matched['LMA_key'].nunique() - remaining['LMA_key'].nunique()
+        logging.warning(f'{e} entries got lost on the way')
+        print(dataframe['LMA_key'].nunique(), matched['LMA_key'].nunique(), remaining['LMA_key'].nunique())
 
     return matched, remaining
 
@@ -175,9 +195,13 @@ def match(dataframe, l_thresh, g_thresh, step):
 def resolve_duplicates(dataframe):
     """
     in case multiple matches are identified, this function resolves them
-    how???
+    using a 3-step approach
+    all duplicates that cannot be resolved using those steps are removed
     """
     matches = dataframe.copy()
+
+    # making sure that removing duplicates always leaves the most similar ones
+    matches.sort_values(by=['ratio', 'dist', 'LMA_key'], ascending=[False, True, True], inplace=True)
 
     matches['nace_count'] = matches.groupby('LMA_key')['KvK_sbi'].transform("nunique")
     # if all duplicates refer to the same NACE/SBI code
@@ -203,30 +227,34 @@ def resolve_duplicates(dataframe):
 
     # if there are still duplicates remaining
     # then priority is given to the combined closest one
-    if "dist" not in matches.columns:
-        matches = compute_distances(matches)
+    # if "dist" not in matches.columns:
+    #     matches = compute_distances(matches)
 
     # !!! find closest match by name and closest match by distance and check if it is the same
-    closest_name = matches.loc[matches.groupby(["LMA_key"])["ratio"].idxmax()]
-    closest_point = matches.loc[matches.groupby(["LMA_key"])["dist"].idxmin()]
-    resolved_combined = closest_name[closest_name.index.isin(closest_point.index)]
-    resolved_combined['match'] = resolved_combined['match'] + 'c'
+    if matches['match'].str[0].any() == '2':
+        resolved_combined = pd.DataFrame()
+    else:
+        closest_name = matches.loc[matches.groupby(["LMA_key"])["ratio"].idxmax()]
+        closest_point = matches.loc[matches.groupby(["LMA_key"])["dist"].idxmin()]
+        resolved_combined = closest_name[closest_name.index.isin(closest_point.index)]
+        resolved_combined['match'] = resolved_combined['match'] + 'c'
 
     resolved = pd.concat([resolved_4dig, resolved_2dig, resolved_combined])
 
-    # check if nothing got lost
+    # check how many could not be resolved
     if resolved['LMA_key'].nunique() != dataframe['LMA_key'].nunique():
         e = dataframe['LMA_key'].nunique() - resolved['LMA_key'].nunique()
-        logging.warning(f'{e} duplicates were not resolved and returned')
+        logging.warning(f'{e} duplicates could not be resolved')
 
     return resolved
 
 
-def compute_distances(search_space, geom_loaded=False):
+def compute_distances(search_space):
 
     # geo distance
-    if not geom_loaded:
+    if (search_space["LMA_loc"].dtype == object):
         search_space["LMA_loc"] = search_space["LMA_loc"].apply(wkt.loads)
+    if (search_space["KvK_loc"].dtype == object):
         search_space["KvK_loc"] = search_space["KvK_loc"].apply(wkt.loads)
     search_space["dist"] = search_space.apply(lambda x: x["LMA_loc"].distance(x["KvK_loc"]), axis=1, result_type="reduce")
 
@@ -238,14 +266,14 @@ def compute_distances(search_space, geom_loaded=False):
     return search_space
 
 
-def probable_match(search_space, geom_loaded):
+def probable_match(search_space):
     """
     Connect roles with NACE codes from the KvK dataset
     :param search_space:
     :return: dataframe with NACE codes for each role
     """
 
-    search_space = compute_distances(search_space, geom_loaded)
+    search_space = compute_distances(search_space)
 
     # ______________________________________________________________________________
     # 1. BY NAME SIMILARITY AND GEO PROXIMITY
@@ -256,6 +284,8 @@ def probable_match(search_space, geom_loaded):
     if len(matched.index):
         control = matched.copy()
 
+    print(control['LMA_key'].nunique(), remaining['LMA_key'].nunique())
+
     # ______________________________________________________________________________
     # 2. BY NAME SIMILARITY
     #    L-dist >= 95, g-dist <= buffer_dist
@@ -263,7 +293,9 @@ def probable_match(search_space, geom_loaded):
 
     matched, remaining = match(remaining, 95, var.buffer_dist, '4')
     if len(matched.index):
-        control.append(matched.copy())
+        control = control.append(matched.copy())
+
+    print(control['LMA_key'].nunique(), remaining['LMA_key'].nunique())
 
     # ______________________________________________________________________________
     # 3. BY GEO PROXIMITY
@@ -272,7 +304,9 @@ def probable_match(search_space, geom_loaded):
 
     matched, remaining = match(remaining, 50, 5, '5')
     if len(matched.index):
-        control.append(matched.copy())
+        control = control.append(matched.copy())
+
+    print(control['LMA_key'].nunique(), remaining['LMA_key'].nunique())
 
     # ______________________________________________________________________________
     # 3. BY COMBINED SIMILARITY
@@ -284,10 +318,12 @@ def probable_match(search_space, geom_loaded):
     if len(matched.index):
         control = control.append(matched.copy())
 
+    print(control['LMA_key'].nunique(), remaining['LMA_key'].nunique())
+
     c = remaining['LMA_key'].nunique()
     logging.warning(f'{c} remain unmatched')
 
-    return control, remaining
+    return control
 
 
 def validate(dataframe):
