@@ -30,6 +30,7 @@ import geopandas as gpd
 from shapely import wkt
 import variables as var
 from fuzzywuzzy import fuzz
+import time
 
 import warnings  # ignore unnecessary warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -42,7 +43,7 @@ control_columns = ["Key", "Origname", "Adres", "orig_zaaknaam", "adres", "active
 output_columns = ["Key", "Origname", "AG", "activenq"]
 
 
-def prepare_data(LMA_dataframe, KvK_actors):
+def prepare_KvK_data(KvK_actors):
     """
     Extract relevant actors from the LMA dataset and connect them with
     the KvK companies within their search space
@@ -63,10 +64,10 @@ def prepare_data(LMA_dataframe, KvK_actors):
     KvK_actors_geo = gpd.GeoDataFrame(KvK_actors,
                                       geometry="KvK_loc", crs={"init": "epsg:28992"})
 
+    return KvK_actors_geo
 
-    # ______________________________________________________________________________
-    # ######## P R E P A R E   A  D A T A S E T ########
-    # ______________________________________________________________________________
+
+def prepare_LMA_data(LMA_dataframe):
 
     # extract ontdoeners from LMA dataset to connect NACE
     # all other roles have predefined NACE codes
@@ -110,7 +111,7 @@ def prepare_data(LMA_dataframe, KvK_actors):
     LMA_inbound.columns = ['LMA_key', 'LMA_name', 'LMA_origname', 'LMA_address',
                            'LMA_loc', 'LMA_eural']
 
-    return LMA_inbound, KvK_actors_geo
+    return LMA_inbound
 
 
 def exact_match(LMA_data, KvK_data):
@@ -151,6 +152,7 @@ def make_search_space(LMA_inbound, KvK_actors_geo):
     # REDUCE SEARCH SPACE FOR THE REST
     #    companies within geographical radius
     # ______________________________________________________________________________
+    start = time.time()
 
     # turn wkt location into geopandas geometry
     LMA_inbound["LMA_loc"] = LMA_inbound["LMA_loc"].apply(wkt.loads)
@@ -162,6 +164,9 @@ def make_search_space(LMA_inbound, KvK_actors_geo):
     contains = gpd.sjoin(buffers, KvK_actors_geo, how="inner", op="intersects")
     # retain KvK geometry
     search_space = pd.merge(contains, KvK_actors_geo[['KvK_key', 'KvK_loc']], how='left', on='KvK_key')
+
+    end = time.time()
+    print(f"{end - start}s needed to make search space")
 
     # search_space.to_excel('Testing_data/4_search_space.xlsx')
     return(search_space)
@@ -188,6 +193,7 @@ def match(dataframe, l_thresh, g_thresh, step):
         e = dataframe['LMA_key'].nunique() - matched['LMA_key'].nunique() - remaining['LMA_key'].nunique()
         logging.warning(f'{e} entries got lost on the way')
         print(dataframe['LMA_key'].nunique(), matched['LMA_key'].nunique(), remaining['LMA_key'].nunique())
+
 
     return matched, remaining
 
@@ -273,6 +279,8 @@ def probable_match(search_space):
     :return: dataframe with NACE codes for each role
     """
 
+    start = time.time()
+
     search_space = compute_distances(search_space)
 
     # ______________________________________________________________________________
@@ -280,7 +288,7 @@ def probable_match(search_space):
     #    L-dist >= 95, g-dist =< 5
     # ______________________________________________________________________________
 
-    matched, remaining = match(search_space, 95, 5, '3')
+    matched, remaining = match(search_space, var.sim_ratio, 5, '3')
     if len(matched.index):
         control = matched.copy()
 
@@ -291,7 +299,7 @@ def probable_match(search_space):
     #    L-dist >= 95, g-dist <= buffer_dist
     # ______________________________________________________________________________
 
-    matched, remaining = match(remaining, 95, var.buffer_dist, '4')
+    matched, remaining = match(remaining, var.sim_ratio, var.buffer_dist, '4')
     if len(matched.index):
         control = control.append(matched.copy())
 
@@ -314,7 +322,7 @@ def probable_match(search_space):
     # ______________________________________________________________________________
 
     # gets sent immediatelly to resolving duplicates
-    matched, remaining = match(remaining, 50, 250, '6')
+    matched, remaining = match(remaining, 50, var.buffer_dist, '6')
     if len(matched.index):
         control = control.append(matched.copy())
 
@@ -323,7 +331,24 @@ def probable_match(search_space):
     c = remaining['LMA_key'].nunique()
     logging.warning(f'{c} remain unmatched')
 
+    end = time.time()
+    print(f"{end - start}s needed to choose probable matches")
+
     return control
+
+
+def make_stats(dataframe):
+
+    def q90(x):
+        return x.quantile(0.90)
+
+    stats = dataframe.groupby('match').agg({'dist': ["count", "mean", "median", q90],
+                                            'ratio': ["mean", "median", q90]
+                                                            })
+
+    print(stats)
+
+    print(stats[('dist', 'count')].sum()/10, '% matched')
 
 
 def validate(dataframe):
@@ -332,8 +357,38 @@ def validate(dataframe):
     # pairs of valid activity-waste codes
     logging.info("Import NACE-EWC validation...")
     try:
-        global nace_ewc
         nace_ewc = pd.read_csv("Private_data/NACE-EWC.csv", low_memory=False)
-        nace_ewc['activenq'] = nace_ewc['activenq'].astype(str).str.zfill(4)
+        nace_ewc['NACE'] = nace_ewc['NACE'].astype(str).str.zfill(4)
+        nace_ewc['EuralCode'] = nace_ewc['EuralCode'].astype(str).str.zfill(6)
+        nace_ewc.drop_duplicates(inplace=True)
     except Exception as error:
         logging.critical(error)
+
+    euralcodes = pd.DataFrame(dataframe['LMA_eural'].str.split(',').tolist(), index=dataframe['LMA_key']).stack()
+    euralcodes = euralcodes.reset_index([0, 'LMA_key'])
+    euralcodes.columns = ['LMA_key', 'LMA_eural']
+
+    eural_sbi = pd.merge(euralcodes, dataframe[['LMA_key', 'KvK_sbi']], on='LMA_key')
+    eural_sbi['KvK_sbi'] = eural_sbi['KvK_sbi'].astype(str).str.zfill(4)
+    eural_sbi['LMA_eural'] = eural_sbi['LMA_eural'].astype(str).str.zfill(6)
+
+    validation = pd.merge(eural_sbi, nace_ewc, left_on=['LMA_eural', 'KvK_sbi'],
+                          right_on=['EuralCode', 'NACE'], how='left', validate="m:1")
+
+    validation.loc[validation['NACE'].notna(), ['Valid']] = 1
+    validation.loc[validation['NACE'].isna(), ['Valid']] = 0
+
+    v_ratio = validation['Valid'].sum() / len(validation.index) * 100
+    print(f'{100 - v_ratio}% of all NACE-EWC combinations are invalid')
+
+    valid_stats = validation.groupby('LMA_key')['Valid'].mean()
+
+    none_count = valid_stats[valid_stats == 0].count()
+    some_count = valid_stats[(valid_stats > 0) & (valid_stats < 1)].count()
+    all_count = valid_stats[valid_stats == 1].count()
+
+    print(f'{none_count} actors have no valid NACE-EWC combinations')
+    print(f'{some_count} actors have some valid NACE-EWC combinations')
+    print(f'{all_count} actors have all valid NACE-EWC combinations')
+
+    # validation.to_excel('validation.xlsx')

@@ -67,18 +67,17 @@ def clean_company_name(name):
     :return: formatted row
     """
 
-    # remove all non-ASCII characters
-    orig_name = name
-    printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r\x0b\x0c"
-    name = "".join(filter(lambda x: x in printable, name))
-
     name = name.upper()
 
     litter = [" SV", "S V", "S.V.", " BV", "B V", "B.V.", " CV", "C.V.",
-              " NV", "N.V.", "V.O.F", " VOF", "V O F", "\"T", "\"S"]
+              " NV", "NV " "N.V.", "V.O.F.", " VOF", "VOF " "V O F", "\"T", "\"S"]
     # remove all the littering characters
     for l in litter:
         name = name.replace(l, "")
+
+    # remove all non-ASCII characters
+    printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \t\n\r\x0b\x0c"
+    name = "".join(filter(lambda x: x in printable, name))
 
     name = " ".join(name.split())
 
