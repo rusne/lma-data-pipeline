@@ -359,6 +359,7 @@ def validate(dataframe):
     try:
         nace_ewc = pd.read_csv("Private_data/NACE-EWC.csv", low_memory=False)
         nace_ewc['NACE'] = nace_ewc['NACE'].astype(str).str.zfill(4)
+        nace_ewc['NACE'] = nace_ewc['NACE'].astype(str).str.slice(stop=2)
         nace_ewc['EuralCode'] = nace_ewc['EuralCode'].astype(str).str.zfill(6)
         nace_ewc.drop_duplicates(inplace=True)
     except Exception as error:
@@ -370,6 +371,7 @@ def validate(dataframe):
 
     eural_sbi = pd.merge(euralcodes, dataframe[['LMA_key', 'KvK_sbi']], on='LMA_key')
     eural_sbi['KvK_sbi'] = eural_sbi['KvK_sbi'].astype(str).str.zfill(4)
+    eural_sbi['KvK_sbi'] = eural_sbi['KvK_sbi'].astype(str).str.slice(stop=2)
     eural_sbi['LMA_eural'] = eural_sbi['LMA_eural'].astype(str).str.zfill(6)
 
     validation = pd.merge(eural_sbi, nace_ewc, left_on=['LMA_eural', 'KvK_sbi'],
@@ -391,4 +393,4 @@ def validate(dataframe):
     print(f'{some_count} actors have some valid NACE-EWC combinations')
     print(f'{all_count} actors have all valid NACE-EWC combinations')
 
-    # validation.to_excel('validation.xlsx')
+    validation.to_excel('validation.xlsx')
