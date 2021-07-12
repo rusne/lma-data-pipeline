@@ -1,6 +1,4 @@
 Private_data/
-Public_data/
-Testing_data/4_search_space.xlsx
 .idea
 venv
 __pycache__
