@@ -36,18 +36,19 @@ colors = 'viridis'
 # FIGURE 1: Algorithm runtime dependency on the search radius
 # ______________________________________________________________________________
 
-data = pd.read_csv('Private_data/results/buffer_stats.csv', sep=';')
+data = pd.read_csv('Private_data/sample/buffer_stats.csv', sep=';')
 
-title = 'Runtime dependent on the search space radius'
+title = 'Runtime dependency on the search space radius'
 viz1 = data[['Buffer dist., m', 'Search space runtime, s', 'Matching runtime, s']]
 viz1.set_index('Buffer dist., m', inplace=True)
 
 fig1 = viz1.plot.line(colormap=colors, legend=True, title=title,
+               xticks=[50, 250, 500, 750, 1000, 2500, 5000],
                xlim=(0, 5000),
                ylim=(0, 1000))
 
 print(viz1)
-fig1.figure.savefig('results/buffer_stats_fig1.png')
+fig1.figure.savefig('Private_data/sample/buffer_stats_fig1.png', dpi=300)
 
 plt.show()
 
@@ -55,28 +56,30 @@ plt.show()
 # FIGURE 2: Algorithm matching success ratio dependency on the search radius
 # ______________________________________________________________________________
 
-title = 'Matching success dependent on the search space radius'
+data = pd.read_csv('Private_data/sample/buffer_stats.csv', sep=';')
+
+title = 'Matching success dependency on the search space radius'
 viz2 = data[['Buffer dist., m', '% matches']]
 viz2.set_index('Buffer dist., m', inplace=True)
 
 fig2 = viz2.plot.line(colormap=colors, legend=True, title=title,
-               xticks=[50, 250, 500, 1000, 2500, 5000],
+               xticks=[50, 250, 500, 750, 1000, 2500, 5000],
                xlim=(0, 5000),
                ylim=(0, 100))
 
 print(viz2)
-fig2.figure.savefig('results/buffer_stats_fig2.png')
+fig2.figure.savefig('Private_data/sample/buffer_stats_fig2.png', dpi=300)
 
 plt.show()
 
-# ______________________________________________________________________________
-# FIGURE 5: Matching quality per subset
-# ______________________________________________________________________________
+______________________________________________________________________________
+FIGURE 5: Matching quality per subset
+______________________________________________________________________________
 
 
-data = pd.read_csv('Private_data/results/validation_nothresh.csv', sep=';')
+data = pd.read_excel('Private_data/sample/sample_validation.xlsx')
 
-title = 'Matching quality'
+title = 'Matching quality per each subset according to the manual validation'
 
 # data['subset'] = data['match'].str[1]
 # data['set'] = data['match'].str[0]
@@ -121,6 +124,7 @@ inner_cmap = pd.DataFrame.from_dict({'-2': '#FF928B',
 # assign colours
 viz = pd.merge(viz, outer_cmap, left_on='match', right_index=True)
 viz = pd.merge(viz, inner_cmap, left_on='validity', right_index=True)
+print(viz)
 viz.sort_values(by=['match', 'validity'], inplace=True)
 # inner = viz.groupby(['subset'])['validity'].agg('count')
 
@@ -143,6 +147,8 @@ ax.set(aspect="equal", title=title)
 
 ax.legend(outer_viz['match'])
 
+plt.savefig('Private_data/sample/sample_validation_fig1.png', dpi=300)
+
 plt.show()
 
 # LEGEND PIE
@@ -159,15 +165,18 @@ ax.set(aspect="equal", title=title)
 
 ax.legend(inner_leg['validity'])
 
+plt.savefig('Private_data/sample/sample_validation_fig2.png', dpi=300)
+
 plt.show()
 
 # ______________________________________________________________________________
 # FIGURE 7: Number of entities per NACE - EWC
 # ______________________________________________________________________________
 
-data = pd.read_excel('Private_data/results/validation_AG.xlsx', dtype=str)
+data = pd.read_excel('Private_data/validation_AG.xlsx', dtype=str)
 
-data = data[data['Valid'] == '1']
+# data = data[data['Valid'] == '1']
+data = data[data['Valid'] == '0']
 data = data[['LMA_key', 'LMA_eural', 'KvK_ag']]
 
 data['LMA_eural'] = data['LMA_eural'].str.slice(stop=2)
@@ -177,8 +186,8 @@ data = data.groupby(['LMA_eural', 'KvK_ag']).count().reset_index()
 data = data.pivot(index='LMA_eural', columns='KvK_ag', values='LMA_key')
 data.fillna(0, inplace=True)
 
-# data['Sum'] = data.sum(axis=1)
-# data.loc['Sum'] = data.sum()
+data['Sum'] = data.sum(axis=1)
+data.loc['Sum'] = data.sum()
 
 print(data)
 
@@ -197,7 +206,9 @@ for i in range(len(data.columns)):
             text = str(int(text))
         plt.text(i, j, text, ha="center", va="center", color="w", fontsize='xx-small')
 
-plt.show()
+plt.savefig('Private_data/sample/ewc-nace_fig1_sum.png', dpi=300)
+# plt.savefig('Private_data/sample/ewc-nace_fig2_sum.png', dpi=300)
+# plt.show()
 
 
 # ______________________________________________________________________________
@@ -205,11 +216,14 @@ plt.show()
 # ______________________________________________________________________________
 
 data = pd.read_excel('Private_data/result.xlsx', dtype=str)
+data.fillna('na', inplace=True)
 
-data = data[data['match'] == '0']
+title = 'Number of entities per each EWC section'
+
+# data = data[data['match'] == '0']
 data.loc[data['match'].isin(['5a', '5b', '6a', '6b']), ['Confidence']] = 'Low confidence'
 data.loc[data['match'].isin(['1a', '2a', '2b', '3a', '3b', '4a', '4b']), ['Confidence']] = 'High confidence'
-data.loc[data['match'].isin(['0']), ['Confidence']] = 'Unmatched'
+data.loc[data['match'].isin(['na']), ['Confidence']] = 'Unmatched'
 
 data = data[['LMA_key', 'LMA_eural', 'Confidence']]
 
@@ -225,30 +239,10 @@ data = pd.merge(data[['LMA_key', 'Confidence']], euralcodes, on='LMA_key')
 
 data = data.groupby(['LMA_eural', 'Confidence']).count().unstack()
 
-# print(data)
-
-# data.plot.bar(stacked=True, cmap="viridis")
-# plt.show()
-
-data.columns = data.columns.droplevel(0)
-print(data.columns)
-data['High'] = data['High confidence'] / data.sum(axis=1)
 print(data)
 
+data.plot.bar(stacked=True, cmap="viridis", title=title)
 
-plt.imshow(data, cmap="viridis")
-
-plt.colorbar()
-plt.xticks(range(len(data.columns)), data.columns)
-plt.yticks(range(len(data.index)), data.index)
-
-for i in range(len(data.columns)):
-    for j in range(len(data.index)):
-        text = data.loc[data.index[j], data.columns[i]]
-        if text == 0:
-            text = '-'
-        else:
-            text = str(int(text))
-        plt.text(i, j, text, ha="center", va="center", color="w", fontsize='xx-small')
+plt.savefig('Private_data/ewc-nace_fig3.png', dpi=300)
 
 plt.show()
