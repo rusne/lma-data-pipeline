@@ -126,6 +126,20 @@ def run(dataframe):
         LMA = LMA[LMA["Aantal_vrachten"] >= 1]
         logging.warning(f"{e} lines without trips removed")
 
+    # unrealistically big amount per trip
+    e = len(LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) > 30000].index)
+    if e:
+        removals += e
+        LMA = LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) <= 30000]
+        logging.warning(f"{e} lines with unrealistically big amount removed")
+
+    # unrealistically small amount per trip
+    e = len(LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) < 1].index)
+    if e:
+        removals += e
+        LMA = LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) >= 1]
+        logging.warning(f"{e} lines with unrealistically small amount removed")
+
     # log the final dataframe size after cleaning
     perc = round(len(LMA.index) / original_length * 100, 1)
     logging.info(f"Final dataset length: {len(LMA.index)} lines ({perc}%)")

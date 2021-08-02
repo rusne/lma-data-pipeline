@@ -10,7 +10,10 @@ dummy_nace = {
 }
 
 # buffer distance for matching actors with KvK data
-buffer_dist = 250
+buffer_dist = 500
+
+# confidence ratio for company name similarity
+sim_ratio = 85
 
 
 # Ontvangstmeldingen
