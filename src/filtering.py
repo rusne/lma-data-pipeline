@@ -52,18 +52,18 @@ def run(dataframe):
     original_length = len(LMA.index)
     removals = 0
 
-    # keep flows where at least one role is within AMA
-    postcodes = pd.read_csv('Spatial_data/AMA_postcode.csv', low_memory=False)
-    postcodes['AMA_postcode'] = postcodes['AMA_postcode'].astype(str)
-    conditions = []
-    for role in roles:
-        condition = LMA[f'{role}_Postcode'].astype(str).str[:4].isin(postcodes['AMA_postcode'])
-        conditions.append(condition)
-    e = len(LMA[~np.logical_or.reduce(conditions)].index)
-    if e:
-        removals += e
-        LMA = LMA[np.logical_or.reduce(conditions)]
-        logging.warning(f"{e} lines outside AMA removed")
+    # # keep flows where at least one role is within AMA
+    # postcodes = pd.read_csv('Spatial_data/AMA_postcode.csv', low_memory=False)
+    # postcodes['AMA_postcode'] = postcodes['AMA_postcode'].astype(str)
+    # conditions = []
+    # for role in roles:
+    #     condition = LMA[f'{role}_Postcode'].astype(str).str[:4].isin(postcodes['AMA_postcode'])
+    #     conditions.append(condition)
+    # e = len(LMA[~np.logical_or.reduce(conditions)].index)
+    # if e:
+    #     removals += e
+    #     LMA = LMA[np.logical_or.reduce(conditions)]
+    #     logging.warning(f"{e} lines outside AMA removed")
 
     # if "Herkomst" has all columns empty, copy from "Ontdoener"
     if any('Herkomst' in col for col in LMA.columns):
@@ -90,13 +90,13 @@ def run(dataframe):
                 LMA = LMA[LMA[role].notnull()]
                 logging.warning(f"{e} lines without {role} removed")
 
-        # empty postcode
-        postcode = role + "_Postcode"
-        e = len(LMA[LMA[postcode].isnull()].index)
-        if e:
-            removals += e
-            LMA = LMA[LMA[postcode].notnull()]
-            logging.warning(f"{e} lines without {postcode} removed")
+        # # empty postcode
+        # postcode = role + "_Postcode"
+        # e = len(LMA[LMA[postcode].isnull()].index)
+        # if e:
+        #     removals += e
+        #     LMA = LMA[LMA[postcode].notnull()]
+        #     logging.warning(f"{e} lines without {postcode} removed")
 
     # empty year
     e = len(LMA[LMA["MeldPeriodeJAAR"].isnull()].index)
@@ -113,10 +113,10 @@ def run(dataframe):
         logging.warning(f"{e} lines without month removed")
 
     # zero amount
-    e = len(LMA[LMA["Gewicht_KG"] < 1].index)
+    e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] < 1].index)
     if e:
         removals += e
-        LMA = LMA[LMA["Gewicht_KG"] >= 1]
+        LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] >= 1]
         logging.warning(f"{e} lines without weight removed")
 
     # zero trips
@@ -126,19 +126,12 @@ def run(dataframe):
         LMA = LMA[LMA["Aantal_vrachten"] >= 1]
         logging.warning(f"{e} lines without trips removed")
 
-    # unrealistically big amount per trip
-    e = len(LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) > 30000].index)
+    # >41t per trip
+    e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] > 41000].index)
     if e:
         removals += e
-        LMA = LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) <= 30000]
-        logging.warning(f"{e} lines with unrealistically big amount removed")
-
-    # unrealistically small amount per trip
-    e = len(LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) < 1].index)
-    if e:
-        removals += e
-        LMA = LMA[(LMA["Gewicht_KG"] / LMA["Aantal_vrachten"]) >= 1]
-        logging.warning(f"{e} lines with unrealistically small amount removed")
+        LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] <= 41000]
+        logging.warning(f"{e} lines with weight >41t removed")
 
     # log the final dataframe size after cleaning
     perc = round(len(LMA.index) / original_length * 100, 1)

@@ -27,20 +27,20 @@ import numpy as np
 def run(dataframe):
     connect_nace = var.connect_nace
 
-    # ------------------------------------------------------------------------------
-    # NACE - TRANSITION AGENDA
-    # ------------------------------------------------------------------------------
-
-    logging.info(f"Add transition agenda based on NACE...")
-
-    transition_agendas = pd.read_csv('Private_data/NACE_Transitieagendas_NL_v1.3.csv', low_memory=False)
-    transition_agendas.dropna(how='all', axis='columns', inplace=True)
-    transition_agendas.columns = [f'NACE_{col}' for col in transition_agendas.columns]
-
-    dataframe = pd.merge(dataframe, transition_agendas, how='left',
-                         left_on=f'{connect_nace}_NACE', right_on='NACE_Code').set_axis(dataframe.index)
-
-    dataframe.loc[dataframe['NACE_Transitieagenda_indicatief'].isnull(), 'NACE_Transitieagenda_indicatief'] = "non-specifiek"
+    # # ------------------------------------------------------------------------------
+    # # NACE - TRANSITION AGENDA
+    # # ------------------------------------------------------------------------------
+    #
+    # logging.info(f"Add transition agenda based on NACE...")
+    #
+    # transition_agendas = pd.read_csv('Private_data/NACE_Transitieagendas_NL_v1.3.csv', low_memory=False)
+    # transition_agendas.dropna(how='all', axis='columns', inplace=True)
+    # transition_agendas.columns = [f'NACE_{col}' for col in transition_agendas.columns]
+    #
+    # dataframe = pd.merge(dataframe, transition_agendas, how='left',
+    #                      left_on=f'{connect_nace}_NACE', right_on='NACE_Code').set_axis(dataframe.index)
+    #
+    # dataframe.loc[dataframe['NACE_Transitieagenda_indicatief'].isnull(), 'NACE_Transitieagenda_indicatief'] = "non-specifiek"
 
     # ------------------------------------------------------------------------------
     # EURAL CODE - CHAIN POSITION
@@ -65,7 +65,7 @@ def run(dataframe):
     if "GNcode" in dataframe.columns:
         logging.info(f"Add transition agenda based on GN code...")
 
-        transition_agendas = pd.read_csv('Private_data/CN_Transitieagenda_v1.2.csv', low_memory=False)
+        transition_agendas = pd.read_csv('Private_data/CN_Transitieagenda_v1.2.csv', sep="\t", low_memory=False)
         transition_agendas.dropna(how='all', axis='columns', inplace=True)
         transition_agendas.columns = [f'GN_{col}' for col in transition_agendas.columns]
         transition_agendas = transition_agendas[transition_agendas['GN_CN_LMA'].notnull()]
