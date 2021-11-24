@@ -26,13 +26,13 @@ import functions
 # KvK_dataframe = pd.read_csv("Private_data/2018_KvK.csv", low_memory=False)
 # KvK_companies = functions.prepare_KvK_data(KvK_dataframe)
 #
-# # --------- DATA PREPROCESSING LMA ---------------------------------------------
-#
-# # LMA_dataframe = pd.read_excel('Private_data/LMA_data_AMA/ontvangstmeldingen_AMA_2018_cleaned.xlsx')
-# # LMA_actors = functions.prepare_LMA_data(LMA_dataframe)
-#
-# # intermediary output
-# # LMA_actors.to_excel('Private_data/LMA_ontdoeners_AMA_2018.xlsx')
+# --------- DATA PREPROCESSING LMA ---------------------------------------------
+
+LMA_dataframe = pd.read_excel('Private_data/LMA_data_AMA/ontvangstmeldingen_AMA_2018_cleaned.xlsx')
+LMA_actors = functions.prepare_LMA_data(LMA_dataframe)
+
+# intermediary output
+LMA_actors.to_excel('Private_data/LMA_ontdoeners_AMA_2018_test.xlsx')
 #
 # # --------- SETS 1 & 2 ---------------------------------------------------------
 #
@@ -79,16 +79,16 @@ import functions
 # results of the full dataset
 # result = pd.read_excel('Private_data/result.xlsx')
 # results --- SAMPLE
-result = pd.read_excel('Private_data/sample/sample_validation.xlsx')
-
-# print matching statistics
-functions.make_stats(result)
-
-# validated results full dataset
-# validated_result = result[result['match'].isin(['1a', '2a', '2b', '3a', '3b', '4a', '4b'])]
-# validated results --- SAMPLE
-validated_result = result[result['validity'] == 2]
-
-functions.validate(validated_result, level='AG')
-functions.validate(validated_result, level='2')
-functions.validate(validated_result, level='4')
+# result = pd.read_excel('Private_data/sample/sample_validation.xlsx')
+#
+# # print matching statistics
+# functions.make_stats(result)
+#
+# # validated results full dataset
+# # validated_result = result[result['match'].isin(['1a', '2a', '2b', '3a', '3b', '4a', '4b'])]
+# # validated results --- SAMPLE
+# validated_result = result[result['validity'] == 2]
+#
+# functions.validate(validated_result, level='AG')
+# functions.validate(validated_result, level='2')
+# functions.validate(validated_result, level='4')

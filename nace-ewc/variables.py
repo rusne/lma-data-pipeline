@@ -5,3 +5,5 @@ buffer_dist = 500
 
 # confidence ratio for company name similarity
 sim_ratio = 85
+
+connect_nace = "Ontdoener"

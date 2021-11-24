@@ -43,7 +43,8 @@ if __name__ == "__main__":
     # load dataset
     logging.info("LOAD DATASET...")
     try:
-        dataframe = pd.read_csv("Private_data/LMA_data_AMA_2018/afgiftemeldingen_AMA_2018.csv", low_memory=False)
+        # dataframe = pd.read_csv("Private_data/LMA_data_AMA_2018/afgiftemeldingen_AMA_2018.csv", low_memory=False)
+        dataframe = pd.read_csv("Private_data/LMA_data_AMA_2018/ontvangstmeldingen_AMA_2018.csv", low_memory=False)
         assert len(dataframe.index) > 0
     except Exception as error:
         if type(error) == FileNotFoundError:
@@ -86,7 +87,7 @@ if __name__ == "__main__":
 
     # classify
     logging.info("CLASSIFY DATASET...")
-    # classified_dataframe = classify.run(connected_dataframe)
+    classified_dataframe = classify.run(connected_dataframe)
     classified_dataframe = connected_dataframe
     try:
         assert len(classified_dataframe.index) == len(connected_dataframe.index)
@@ -108,7 +109,8 @@ if __name__ == "__main__":
 
     # end pipeline
     logging.info("EXPORT RESULT...")
-    classified_dataframe.to_csv("Private_data/result.csv", index=False)
+    classified_dataframe.to_csv("Private_data/ontvangstmeldingen_AMA_2018_result.csv", index=False)
+    # classified_dataframe.to_csv("Private_data/afgiftemeldingen_AMA_2018_result.csv", index=False)
     logging.info("PIPELINE COMPLETE!")
 
     # # load KvK dataset

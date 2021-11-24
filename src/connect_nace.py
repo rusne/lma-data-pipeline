@@ -332,7 +332,7 @@ def run(dataframe):
     logging.info("Import KvK dataset with geolocation...")
     try:
         global KvK_actors
-        KvK_actors = pd.read_csv("Private_data/2018_KvK.csv", low_memory=False)
+        KvK_actors = pd.read_csv("Private_data/KvK/2018_KvK.csv", low_memory=False)
     except Exception as error:
         logging.critical(error)
         raise
@@ -368,20 +368,21 @@ def run(dataframe):
     all_nace = pd.concat([matched_1, matched_2])
     all_nace.drop_duplicates(subset=["LMA_key"], inplace=True)
 
+
     # add to original dataframe
     role = var.connect_nace
     columns = list(dataframe.columns)
     dataframe["LMA_key"] = dataframe[f"{role}"].str.cat(dataframe[[f"{role}_Postcode"]], sep=" ")
     dataframe = pd.merge(dataframe, all_nace, how="left", on="LMA_key")
     dataframe.rename(columns={'KvK_sbi': f'{role}_activenq', 'KvK_ag': f'{role}_AG'}, inplace=True)
-    columns.extend([f'{role}_activenq', f'{role}_AG'])
+    columns.extend([f'{role}_activenq', f'{role}_AG', 'match'])
     unknown = dataframe[dataframe[f'{role}_AG'].isnull()]["LMA_key"].nunique()
     logging.warning(f"Unknown activity: {unknown}")
     dataframe = dataframe[columns]
 
     # mark unknown activity
-    dataframe[f"{role}_AG"] = "W"
-    dataframe[f"{role}_activenq"] = "0000"
+    dataframe.loc[dataframe[f"{role}_AG"].isna(), f"{role}_activenq"] = "0000"
+    dataframe.loc[dataframe[f"{role}_AG"].isna(), f"{role}_AG"] = "W"
     dataframe[f"{role}_NACE"] = dataframe[f"{role}_AG"].str.cat(dataframe[f"{role}_activenq"].astype(str).str[:4], sep="-")
 
     return dataframe

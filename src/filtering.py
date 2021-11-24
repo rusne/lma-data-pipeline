@@ -113,10 +113,10 @@ def run(dataframe):
         logging.warning(f"{e} lines without month removed")
 
     # zero amount
-    e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] < 1].index)
+    e = len(LMA[LMA["Gewicht_KG"] < 1].index)
     if e:
         removals += e
-        LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] >= 1]
+        LMA = LMA[LMA["Gewicht_KG"] >= 1]
         logging.warning(f"{e} lines without weight removed")
 
     # zero trips
@@ -127,10 +127,12 @@ def run(dataframe):
         logging.warning(f"{e} lines without trips removed")
 
     # >41t per trip
-    e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] > 41000].index)
+    # e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] > 41000].index)
+    e = len(LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] > 30000].index)
     if e:
         removals += e
-        LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] <= 41000]
+        # LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] <= 41000]
+        LMA = LMA[LMA["Gewicht_KG"] / LMA["Aantal_vrachten"] <= 30000]
         logging.warning(f"{e} lines with weight >41t removed")
 
     # log the final dataframe size after cleaning
