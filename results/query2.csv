@@ -1,0 +1,57 @@
+﻿source;target;amount
+C - Manufacturing;A - Storage and transshipment;30130,594
+C - Manufacturing;B - Direct reuse;2534,332
+C - Manufacturing;C - Manufacturing;81903,966
+C - Manufacturing;D - Chemical processing;28045,604
+C - Manufacturing;E - Biological processing;16176,12
+C - Manufacturing;F - Incineration;2646,509
+C - Manufacturing;G - Landfill;37572,155
+"E - Watter supply; sewerage, waste management and remediation activities";A - Storage and transshipment;264770,147
+"E - Watter supply; sewerage, waste management and remediation activities";B - Direct reuse;201659,291
+"E - Watter supply; sewerage, waste management and remediation activities";C - Manufacturing;491568,001
+"E - Watter supply; sewerage, waste management and remediation activities";D - Chemical processing;13147,926
+"E - Watter supply; sewerage, waste management and remediation activities";E - Biological processing;58068,5
+"E - Watter supply; sewerage, waste management and remediation activities";F - Incineration;103594,214
+"E - Watter supply; sewerage, waste management and remediation activities";G - Landfill;49369,29
+F - Construction;A - Storage and transshipment;147216,257
+F - Construction;B - Direct reuse;23679,436
+F - Construction;C - Manufacturing;547264,647
+F - Construction;D - Chemical processing;33057,318
+F - Construction;E - Biological processing;13072,29
+F - Construction;F - Incineration;11615,52
+F - Construction;G - Landfill;20101,895
+G - Wholesale and retail trade;A - Storage and transshipment;66813,971
+G - Wholesale and retail trade;B - Direct reuse;13396,208
+G - Wholesale and retail trade;C - Manufacturing;82724,148
+G - Wholesale and retail trade;D - Chemical processing;4943,357
+G - Wholesale and retail trade;E - Biological processing;4996,19
+G - Wholesale and retail trade;F - Incineration;1094,937
+G - Wholesale and retail trade;G - Landfill;2182,52
+H - Transportation and storage;A - Storage and transshipment;39870,607
+H - Transportation and storage;B - Direct reuse;9338,92
+H - Transportation and storage;C - Manufacturing;186028,21
+H - Transportation and storage;D - Chemical processing;10549,188
+H - Transportation and storage;E - Biological processing;4380,03
+H - Transportation and storage;F - Incineration;2758,923
+H - Transportation and storage;G - Landfill;5899,38
+N - Administrative and support service activities;A - Storage and transshipment;40785,064
+N - Administrative and support service activities;B - Direct reuse;3085,82
+N - Administrative and support service activities;C - Manufacturing;47823,65
+N - Administrative and support service activities;D - Chemical processing;2658,995
+N - Administrative and support service activities;E - Biological processing;7210,326
+N - Administrative and support service activities;F - Incineration;64,264
+N - Administrative and support service activities;G - Landfill;219,59
+"O - Public administration and defence; compulsory social security";A - Storage and transshipment;97316,824
+"O - Public administration and defence; compulsory social security";B - Direct reuse;15188,02
+"O - Public administration and defence; compulsory social security";C - Manufacturing;43414,85
+"O - Public administration and defence; compulsory social security";D - Chemical processing;11432,205
+"O - Public administration and defence; compulsory social security";E - Biological processing;12718,18
+"O - Public administration and defence; compulsory social security";F - Incineration;10837,62
+"O - Public administration and defence; compulsory social security";G - Landfill;395,2
+All other activities;A - Storage and transshipment;64560,437
+All other activities;B - Direct reuse;2612,32
+All other activities;C - Manufacturing;49332,287
+All other activities;D - Chemical processing;11805,976
+All other activities;E - Biological processing;29849,47
+All other activities;F - Incineration;2654,748
+All other activities;G - Landfill;3719,614

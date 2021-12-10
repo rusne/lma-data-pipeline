@@ -1,0 +1,17 @@
+﻿Cleanliness;Purity;Organic;Biotic;amount
+clean;mixed;inorganic;abiotic;1923405,782
+clean;unknown purity;inorganic;abiotic;8009,243
+clean;pure;inorganic;abiotic;2257593,023
+clean;mixed;organic;abiotic;31972,353
+clean;pure;organic;abiotic;76270,714
+clean;pure;unknown origin;abiotic;98969
+clean;mixed;unknown origin;abiotic;451413,806
+clean;pure;organic;biotic;1158912,486
+clean;mixed;organic;biotic;87278,853
+clean;pure;organic;unknown;40507,386
+clean;pure;unknown origin;unknown;171991,581
+clean;mixed;unknown origin;unknown;2249727,02
+contaminated;mixed;inorganic;abiotic;11469,764
+contaminated;mixed;organic;abiotic;85,052
+contaminated;mixed;unknown origin;abiotic;5709,384
+contaminated;mixed;unknown origin;unknown;163,164

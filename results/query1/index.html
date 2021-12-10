@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>geoFluxus map</title>
+    <style>
+      #root {
+      	position: absolute;
+	    top: 0;
+	    right: 0;
+	    bottom: 0;
+	    left: 0;
+      }
+    </style>
+  	<script src="https://cdn.jsdelivr.net/npm/geofluxus-map@1.4.1/dist/index.js"></script>
+  	<link href="https://cdn.jsdelivr.net/npm/geofluxus-map@1.4.1/dist/index.css" rel="stylesheet" type="text/css">
+  	<script src="./query1.json"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/javascript">
+    	var scale = {
+		    "Locally treated waste": "rgb(156,9,67)",
+		    "Waste treated in the metropolitan region": "rgb(254,128,5)",
+        "Waste treated outside of the metropolitan region": "rgb(94,82,160)"
+		}
+
+    	// flowmap
+    	var map = new gFMap.FlowMap({
+    		target: 'root',
+    		data: data,
+    		groupBy: 'tag',
+    		scale: scale,
+    		legend: {
+	            title: "<span><b>Primary waste produced in Amsterdam municipality in 2018</b></span>",
+	        }
+    	})
+    </script>
+  </body>
+</html>
